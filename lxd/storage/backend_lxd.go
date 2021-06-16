@@ -1778,9 +1778,12 @@ func (b *lxdBackend) MountInstance(inst instance.Instance, op *operations.Operat
 	}
 
 	// Get the root disk device config.
-	rootDiskConf, err := b.instanceRootVolumeConfig(inst)
-	if err != nil {
-		return nil, err
+	var rootDiskConf map[string]string
+	if inst.ID() > -1 {
+		rootDiskConf, err = b.instanceRootVolumeConfig(inst)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	contentType := InstanceContentType(inst)
@@ -1821,9 +1824,12 @@ func (b *lxdBackend) UnmountInstance(inst instance.Instance, op *operations.Oper
 	}
 
 	// Get the root disk device config.
-	rootDiskConf, err := b.instanceRootVolumeConfig(inst)
-	if err != nil {
-		return false, err
+	var rootDiskConf map[string]string
+	if inst.ID() > -1 {
+		rootDiskConf, err = b.instanceRootVolumeConfig(inst)
+		if err != nil {
+			return false, err
+		}
 	}
 
 	contentType := InstanceContentType(inst)
