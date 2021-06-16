@@ -63,6 +63,52 @@ func commonRules() *drivers.Validators {
 	}
 }
 
+// New instantiates a pool from config supplied and returns a Pool interface.
+// If the pool's driver is not recognised then drivers.ErrUnknownDriver is returned.
+func New(state *state.State, info *api.StoragePool) (Pool, error) {
+	// Handle mock requests.
+	if state.OS.MockMode {
+		pool := mockBackend{}
+		pool.name = info.Name
+		pool.state = state
+		pool.logger = logging.AddContext(logger.Log, log.Ctx{"driver": "mock", "pool": pool.name})
+		driver, err := drivers.Load(state, "mock", "", nil, pool.logger, nil, nil)
+		if err != nil {
+			return nil, err
+		}
+		pool.driver = driver
+
+		return &pool, nil
+	}
+
+	var poolID int64 = -1 // No DB ID as not from database. Not all functionality will be available.
+
+	// Ensure a config map exists.
+	if info.Config == nil {
+		info.Config = map[string]string{}
+	}
+
+	logger := logging.AddContext(logger.Log, log.Ctx{"driver": info.Driver, "pool": info.Name})
+
+	// Load the storage driver.
+	driver, err := drivers.Load(state, info.Driver, info.Name, info.Config, logger, volIDFuncMake(state, poolID), commonRules())
+	if err != nil {
+		return nil, err
+	}
+
+	// Setup the pool struct.
+	pool := lxdBackend{}
+	pool.driver = driver
+	pool.id = poolID
+	pool.db = *info
+	pool.name = info.Name
+	pool.state = state
+	pool.logger = logger
+	pool.nodes = nil // TODO support clustering.
+
+	return &pool, nil
+}
+
 // CreatePool creates a new storage pool on disk and returns a Pool interface.
 // If the pool's driver is not recognised then drivers.ErrUnknownDriver is returned.
 // Deprecated, used only by patches.
