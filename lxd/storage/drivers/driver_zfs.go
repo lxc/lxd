@@ -368,6 +368,10 @@ func (d *zfs) Update(changedConfig map[string]string) error {
 
 // Mount mounts the storage pool.
 func (d *zfs) Mount() (bool, error) {
+	if d.config["zfs.pool_name"] == "" {
+		return false, fmt.Errorf("zfs.pool_name must be specified")
+	}
+
 	// Check if already setup.
 	if d.checkDataset(d.config["zfs.pool_name"]) {
 		return false, nil
