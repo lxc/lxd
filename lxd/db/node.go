@@ -150,7 +150,10 @@ func (n NodeInfo) ToAPI(cluster *Cluster, node *Node) (*api.ClusterMember, error
 	}
 	result.FailureDomain = failureDomain
 
-	if n.IsOffline(offlineThreshold) {
+	if n.State == ClusterMemberStateEvacuated {
+		result.Status = "Evacuated"
+		result.Message = "Unavailable due to maintenance"
+	} else if n.IsOffline(offlineThreshold) {
 		result.Status = "Offline"
 		result.Message = fmt.Sprintf("No heartbeat for %s (%s)", time.Now().Sub(n.Heartbeat), n.Heartbeat)
 	} else {
@@ -464,14 +467,20 @@ func (c *ClusterTx) nodes(pending bool, where string, args ...interface{}) ([]No
 			&nodes[i].State,
 		}
 	}
-	if pending {
-		args = append([]interface{}{ClusterMemberStatePending}, args...)
-	} else {
-		args = append([]interface{}{ClusterMemberStateCreated}, args...)
-	}
 
 	// Get the node entries
-	sql = "SELECT id, name, address, description, schema, api_extensions, heartbeat, arch, state FROM nodes WHERE state=?"
+	sql = "SELECT id, name, address, description, schema, api_extensions, heartbeat, arch, state FROM nodes "
+
+	if pending {
+		// Include only pending nodes
+		sql += fmt.Sprintf("WHERE state=? ")
+	} else {
+		// Include created and evacuated nodes
+		sql += fmt.Sprintf("WHERE state!=? ")
+	}
+
+	args = append([]interface{}{ClusterMemberStatePending}, args...)
+
 	if where != "" {
 		sql += fmt.Sprintf("AND %s ", where)
 	}
