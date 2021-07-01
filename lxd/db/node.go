@@ -985,7 +985,7 @@ func (c *ClusterTx) GetNodeWithLeastInstances(archs []int, defaultArch int) (str
 	containers := -1
 	isDefaultArchChosen := false
 	for _, node := range nodes {
-		if node.IsOffline(threshold) {
+		if node.State == ClusterMemberStateEvacuated || node.IsOffline(threshold) {
 			continue
 		}
 
