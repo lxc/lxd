@@ -690,6 +690,25 @@ func (c *ClusterTx) UpdateNodeFailureDomain(id int64, domain string) error {
 	return nil
 }
 
+// UpdateNodeStatus changes the state of a node.
+func (c *ClusterTx) UpdateNodeStatus(id int64, state int) error {
+	result, err := c.tx.Exec("UPDATE nodes SET state=? WHERE id=?", state, id)
+	if err != nil {
+		return err
+	}
+
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if n != 1 {
+		return fmt.Errorf("Query updated %d rows instead of 1", n)
+	}
+
+	return nil
+}
+
 // GetNodeFailureDomain returns the failure domain associated with the node with the given ID.
 func (c *ClusterTx) GetNodeFailureDomain(id int64) (string, error) {
 	stmt := `
