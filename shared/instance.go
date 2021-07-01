@@ -83,6 +83,10 @@ var KnownInstanceConfigKeys = map[string]func(value string) error{
 	"boot.stop.priority":         validate.Optional(validate.IsInt64),
 	"boot.host_shutdown_timeout": validate.Optional(validate.IsInt64),
 
+	"cluster.evacuate": validate.Optional(func(value string) error {
+		return validate.IsOneOf(value, []string{"auto", "migrate", "stop"})
+	}),
+
 	"limits.cpu": func(value string) error {
 		if value == "" {
 			return nil
@@ -249,6 +253,7 @@ var KnownInstanceConfigKeys = map[string]func(value string) error{
 	"volatile.apply_quota":      validate.IsAny,
 	"volatile.uuid":             validate.Optional(validate.IsUUID),
 	"volatile.vsock_id":         validate.Optional(validate.IsInt64),
+	"volatile.evacuate.origin":  validate.IsAny,
 }
 
 // ConfigKeyChecker returns a function that will check whether or not
