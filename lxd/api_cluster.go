@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	dqlitedriver "github.com/canonical/go-dqlite/driver"
 	"github.com/gorilla/mux"
@@ -20,6 +21,7 @@ import (
 	"github.com/lxc/lxd/lxd/cluster"
 	clusterRequest "github.com/lxc/lxd/lxd/cluster/request"
 	"github.com/lxc/lxd/lxd/db"
+	"github.com/lxc/lxd/lxd/instance"
 	"github.com/lxc/lxd/lxd/lifecycle"
 	"github.com/lxc/lxd/lxd/node"
 	"github.com/lxc/lxd/lxd/operations"
@@ -30,6 +32,7 @@ import (
 	"github.com/lxc/lxd/lxd/util"
 	"github.com/lxc/lxd/shared"
 	"github.com/lxc/lxd/shared/api"
+	"github.com/lxc/lxd/shared/i18n"
 	log "github.com/lxc/lxd/shared/log15"
 	"github.com/lxc/lxd/shared/logger"
 	"github.com/lxc/lxd/shared/osarch"
@@ -58,6 +61,12 @@ var clusterNodeCmd = APIEndpoint{
 	Patch:  APIEndpointAction{Handler: clusterNodePatch},
 	Put:    APIEndpointAction{Handler: clusterNodePut},
 	Post:   APIEndpointAction{Handler: clusterNodePost},
+}
+
+var clusterNodeStateCmd = APIEndpoint{
+	Path: "cluster/members/{name}/state",
+
+	Post: APIEndpointAction{Handler: clusterNodeStatePost},
 }
 
 var clusterCertificateCmd = APIEndpoint{
@@ -1129,7 +1138,7 @@ func clusterNodesPost(d *Daemon, r *http.Request) response.Response {
 
 		// Filter to online members.
 		for _, node := range nodes {
-			if node.IsOffline(config.OfflineThreshold()) {
+			if node.State == db.ClusterMemberStateEvacuated || node.IsOffline(config.OfflineThreshold()) {
 				continue
 			}
 
@@ -2232,4 +2241,440 @@ func internalClusterRaftNodeDelete(d *Daemon, r *http.Request) response.Response
 	}
 
 	return response.SyncResponse(true, nil)
+}
+
+// swagger:operation POST /1.0/cluster/members/{name}/state cluster cluster_member_state_post
+//
+// Evacuate or restore a cluster member
+//
+// Evacuates or restores a cluster member.
+//
+// ---
+// consumes:
+//   - application/json
+// produces:
+//   - application/json
+// parameters:
+//   - in: body
+//     name: cluster
+//     description: Cluster member state
+//     required: true
+//     schema:
+//       $ref: "#/definitions/ClusterMemberStatePost"
+// responses:
+//   "200":
+//     $ref: "#/responses/Operation"
+//   "400":
+//     $ref: "#/responses/BadRequest"
+//   "403":
+//     $ref: "#/responses/Forbidden"
+//   "500":
+//     $ref: "#/responses/InternalServerError"
+func clusterNodeStatePost(d *Daemon, r *http.Request) response.Response {
+	name := mux.Vars(r)["name"]
+
+	// Forward request
+	resp := forwardedResponseToNode(d, r, name)
+	if resp != nil {
+		return resp
+	}
+
+	// Parse the request
+	req := api.ClusterMemberStatePost{}
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		return response.BadRequest(err)
+	}
+
+	if req.Action == "evacuate" {
+		return evacuateClusterMember(d, r)
+	} else if req.Action == "restore" {
+		return restoreClusterMember(d, r)
+	}
+
+	return response.BadRequest(fmt.Errorf("Unknown action %q", req.Action))
+}
+
+func evacuateClusterMember(d *Daemon, r *http.Request) response.Response {
+	var err error
+	var node db.NodeInfo
+
+	nodeName := mux.Vars(r)["name"]
+
+	// Set node status to EVACUATED
+	err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
+		// Get the node.
+		node, err = tx.GetNodeByName(nodeName)
+		if err != nil {
+			return errors.Wrap(err, "Failed to get node by name")
+		}
+
+		if node.State == db.ClusterMemberStatePending {
+			return fmt.Errorf("Cannot evacuate or restore a pending node")
+		}
+
+		// Set node status to EVACUATED to prevent instances from being created.
+		err = tx.UpdateNodeStatus(node.ID, db.ClusterMemberStateEvacuated)
+		if err != nil {
+			return errors.Wrap(err, "Failed to update node status")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	// Do nothing if the node is already evacuated.
+	if node.State == db.ClusterMemberStateEvacuated {
+		return response.SmartError(fmt.Errorf("Node is already evacuated"))
+	}
+
+	reverter := revert.New()
+	defer reverter.Fail()
+
+	// Ensure node is put into its previous state if anything fails.
+	reverter.Add(func() {
+		d.cluster.Transaction(func(tx *db.ClusterTx) error {
+			tx.UpdateNodeStatus(node.ID, db.ClusterMemberStateCreated)
+
+			return nil
+		})
+	})
+
+	// The instances are retrieved in a separate transaction, after the node is in EVACUATED state.
+	var dbInstances []db.Instance
+
+	err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
+		// If evacuating, consider only the instances on the node which needs to be evacuated.
+		dbInstances, err = tx.GetInstances(db.InstanceFilter{Node: nodeName})
+		if err != nil {
+			return errors.Wrap(err, "Failed to get instances")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	instances := make([]instance.Instance, len(dbInstances))
+
+	for i, dbInst := range dbInstances {
+		inst, err := instance.LoadByProjectAndName(d.State(), dbInst.Project, dbInst.Name)
+		if err != nil {
+			return response.SmartError(errors.Wrap(err, "Failed to load instance"))
+		}
+
+		instances[i] = inst
+	}
+
+	var targetNodeName string
+	var targetNode db.NodeInfo
+
+	run := func(op *operations.Operation) error {
+		source, err := cluster.Connect(node.Address, d.endpoints.NetworkCert(), d.serverCert(), r, true)
+		if err != nil {
+			return errors.Wrap(err, "Failed to connect to source")
+		}
+
+		metadata := make(map[string]interface{})
+
+		// Stop all instances if needed
+		for _, inst := range instances {
+			if !inst.IsRunning() {
+				continue
+			}
+
+			metadata["evacuation_progress"] = fmt.Sprintf("Stopping %s", inst.Name())
+			op.UpdateMetadata(metadata)
+
+			// Be nice
+			timeout := inst.ExpandedConfig()["boot.host_shutdown_timeout"]
+			val, err := strconv.Atoi(timeout)
+			if err != nil {
+				val = 30
+			}
+
+			err = inst.Shutdown(time.Duration(val) * time.Second)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to stop instance %q", inst.Name())
+			}
+
+			inst.VolatileSet(map[string]string{"volatile.last_state.power": "RUNNING"})
+		}
+
+		migrateInstances := instance.GetMigratableInstances(d.cluster, instances)
+
+		// Migrate instances
+		for _, inst := range migrateInstances {
+			metadata["evacuation_progress"] = fmt.Sprintf("Migrating %s", inst.Name())
+			op.UpdateMetadata(metadata)
+
+			inst.VolatileSet(map[string]string{"volatile.evacuate.origin": nodeName})
+
+			startInstance := inst.LocalConfig()["volatile.last_state.power"] == "RUNNING"
+
+			err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
+				targetNodeName, err = tx.GetNodeWithLeastInstances([]int{node.Architecture}, -1)
+				if err != nil {
+					return err
+				}
+
+				targetNode, err = tx.GetNodeByName(targetNodeName)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+
+			source = source.UseTarget(targetNodeName)
+			source = source.UseProject(inst.Project())
+
+			req := api.InstancePost{
+				Name:      inst.Name(),
+				Migration: true,
+			}
+
+			migrationOp, err := source.MigrateInstance(inst.Name(), req)
+			if err != nil {
+				return errors.Wrap(err, i18n.G("Migration API failure"))
+			}
+
+			err = migrationOp.Wait()
+			if err != nil {
+				return err
+			}
+
+			if !startInstance {
+				continue
+			}
+
+			dest, err := cluster.Connect(targetNode.Address, d.endpoints.NetworkCert(), d.serverCert(), r, true)
+			if err != nil {
+				return errors.Wrap(err, "Failed to connect to destination")
+			}
+
+			metadata["evacuation_progress"] = fmt.Sprintf("Starting %s", inst.Name())
+			op.UpdateMetadata(metadata)
+
+			startOp, err := dest.UpdateInstanceState(inst.Name(), api.InstanceStatePut{Action: "start"}, "")
+			if err != nil {
+				return err
+			}
+
+			err = startOp.Wait()
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+
+	op, err := operations.OperationCreate(d.State(), "", operations.OperationClassTask, db.OperationClusterMemberEvacuate, nil, nil, run, nil, nil, r)
+	if err != nil {
+		return response.InternalError(err)
+	}
+
+	reverter.Success()
+	return operations.OperationResponse(op)
+}
+
+func restoreClusterMember(d *Daemon, r *http.Request) response.Response {
+	originName := mux.Vars(r)["name"]
+
+	var node db.NodeInfo
+	var err error
+
+	err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
+		// Get the node.
+		node, err = tx.GetNodeByName(originName)
+		if err != nil {
+			return errors.Wrap(err, "Failed to get node by name")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	if node.State == db.ClusterMemberStatePending {
+		return response.SmartError(fmt.Errorf("Cannot restore or restore a pending node"))
+	}
+
+	if node.State == db.ClusterMemberStateCreated {
+		return response.SmartError(fmt.Errorf("Node is not evacuated"))
+	}
+
+	var dbInstances []db.Instance
+
+	err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
+		dbInstances, err = tx.GetInstances(*db.InstanceFilterAllInstances())
+		if err != nil {
+			return errors.Wrap(err, "Failed to get instances")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return response.SmartError(err)
+	}
+
+	instances := make([]instance.Instance, 0)
+	localInstances := make([]instance.Instance, 0)
+
+	for _, dbInst := range dbInstances {
+		if dbInst.Node == node.Name {
+			inst, err := instance.LoadByProjectAndName(d.State(), dbInst.Project, dbInst.Name)
+			if err != nil {
+				return response.SmartError(errors.Wrap(err, "Failed to load instance"))
+			}
+
+			localInstances = append(localInstances, inst)
+			continue
+		}
+
+		// Only consider instances where volatile.evacuate.origin is set to the node which needs to be restored.
+		val, ok := dbInst.Config["volatile.evacuate.origin"]
+		if !ok || val != node.Name {
+			continue
+		}
+
+		inst, err := instance.LoadByProjectAndName(d.State(), dbInst.Project, dbInst.Name)
+		if err != nil {
+			return response.SmartError(errors.Wrap(err, "Failed to load instance"))
+		}
+
+		instances = append(instances, inst)
+	}
+
+	run := func(op *operations.Operation) error {
+		var source lxd.InstanceServer
+		var sourceNode db.NodeInfo
+
+		metadata := make(map[string]interface{})
+
+		// Migrate instances
+		for _, inst := range instances {
+			metadata["evacuation_progress"] = fmt.Sprintf("Migrating %s", inst.Name())
+			op.UpdateMetadata(metadata)
+
+			err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
+				sourceNode, err = tx.GetNodeByName(inst.Location())
+				if err != nil {
+					return errors.Wrapf(err, "Failed to get node %q", inst.Location())
+				}
+
+				return nil
+			})
+			if err != nil {
+				return errors.Wrap(err, "Failed to get node")
+			}
+
+			source, err = cluster.Connect(sourceNode.Address, d.endpoints.NetworkCert(), d.serverCert(), r, true)
+			if err != nil {
+				return errors.Wrap(err, "Failed to connect to source")
+			}
+
+			source = source.UseTarget("")
+			source = source.UseProject(inst.Project())
+
+			apiInst, _, err := source.GetInstance(inst.Name())
+			if err != nil {
+				return errors.Wrapf(err, "Failed to get instance %q", inst.Name())
+			}
+
+			if apiInst.Status == "Running" {
+				metadata["evacuation_progress"] = fmt.Sprintf("Stopping %s", inst.Name())
+				op.UpdateMetadata(metadata)
+
+				stopOp, err := source.UpdateInstanceState(inst.Name(), api.InstanceStatePut{Action: "stop", Force: false}, "")
+				if err != nil {
+					return errors.Wrapf(err, "Failed to stop instance %q", inst.Name())
+				}
+
+				err = stopOp.Wait()
+				if err != nil {
+					return errors.Wrapf(err, "Failed to stop instance %q", inst.Name())
+				}
+			}
+
+			req := api.InstancePost{
+				Name:      inst.Name(),
+				Migration: true,
+			}
+
+			source = source.UseTarget(originName)
+
+			migrationOp, err := source.MigrateInstance(inst.Name(), req)
+			if err != nil {
+				return errors.Wrap(err, i18n.G("Migration API failure"))
+			}
+
+			err = migrationOp.Wait()
+			if err != nil {
+				return errors.Wrap(err, "Failed to wait for migration to finish")
+			}
+
+			config := inst.LocalConfig()
+			delete(config, "volatile.evacuate.origin")
+
+			args := db.InstanceArgs{
+				Architecture: inst.Architecture(),
+				Config:       config,
+				Description:  inst.Description(),
+				Devices:      inst.LocalDevices(),
+				Ephemeral:    inst.IsEphemeral(),
+				Profiles:     inst.Profiles(),
+				Project:      inst.Project(),
+				ExpiryDate:   inst.ExpiryDate(),
+			}
+
+			err = inst.Update(args, false)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to update instance %q", inst.Name())
+			}
+		}
+
+		for _, inst := range append(instances, localInstances...) {
+			if inst.LocalConfig()["volatile.last_state.power"] != "RUNNING" {
+				continue
+			}
+
+			metadata["evacuation_progress"] = fmt.Sprintf("Starting %s", inst.Name())
+			op.UpdateMetadata(metadata)
+
+			err = inst.Start(false)
+			if err != nil {
+				return errors.Wrapf(err, "Failed to start instance %q", inst.Name())
+			}
+		}
+
+		err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
+			err = tx.UpdateNodeStatus(node.ID, db.ClusterMemberStateCreated)
+			if err != nil {
+				return errors.Wrap(err, "Failed to update node status")
+			}
+
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	op, err := operations.OperationCreate(d.State(), "", operations.OperationClassTask, db.OperationClusterMemberRestore, nil, nil, run, nil, nil, r)
+	if err != nil {
+		return response.InternalError(err)
+	}
+
+	return operations.OperationResponse(op)
 }
