@@ -177,3 +177,17 @@ func (r *ProtocolLXD) UpdateClusterCertificate(certs api.ClusterCertificatePut, 
 
 	return nil
 }
+
+// UpdateClusterMemberState evacuates or restores a cluster member.
+func (r *ProtocolLXD) UpdateClusterMemberState(name string, state api.ClusterMemberStatePost) (Operation, error) {
+	if !r.HasExtension("clustering_evacuation") {
+		return nil, fmt.Errorf("The server is missing the required \"clustering_evacuation\" API extension")
+	}
+
+	op, _, err := r.queryOperation("POST", fmt.Sprintf("/cluster/members/%s/state", name), state, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return op, nil
+}
