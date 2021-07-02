@@ -222,3 +222,14 @@ type ClusterCertificatePut struct {
 	// Example: X509 PEM certificate key
 	ClusterCertificateKey string `json:"cluster_certificate_key" yaml:"cluster_certificate_key"`
 }
+
+// ClusterMemberStatePost represents the fields required to evacuate a cluster member.
+//
+// swagger:model
+//
+// API extension: clustering_evacuation
+type ClusterMemberStatePost struct {
+	// The action to be performed. Valid actions are "evacuate" and "restore".
+	// Example: evacuate
+	Action string `json:"action" yaml:"action"`
+}
