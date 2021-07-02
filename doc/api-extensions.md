@@ -1400,3 +1400,7 @@ This adds supported storage driver info to server environment info.
 
 ## event\_lifecycle\_requestor\_address
 Adds a new address field to lifecycle requestor.
+
+## clustering\_evacuation
+Adds `POST /1.0/cluster/members/<name>/state` endpoint for evacuating and restoring cluster members.
+It also adds the config keys `cluster.evacuate` and `volatile.evacuate.origin` for setting the evacuation method (`auto`, `stop` or `migrate`) and the origin of any migrated instance respectively.
