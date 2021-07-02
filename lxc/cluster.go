@@ -71,9 +71,18 @@ func (c *cmdCluster) Command() *cobra.Command {
 	cmdClusterUpdateCertificate := cmdClusterUpdateCertificate{global: c.global, cluster: c}
 	cmd.AddCommand(cmdClusterUpdateCertificate.Command())
 
+	// Evacuate cluster member
+	cmdClusterEvacuate := cmdClusterEvacuate{global: c.global, cluster: c}
+	cmd.AddCommand(cmdClusterEvacuate.Command())
+
+	// Restore cluster member
+	cmdClusterRestore := cmdClusterRestore{global: c.global, cluster: c}
+	cmd.AddCommand(cmdClusterRestore.Command())
+
 	// Workaround for subcommand usage errors. See: https://github.com/spf13/cobra/issues/706
 	cmd.Args = cobra.NoArgs
 	cmd.Run = func(cmd *cobra.Command, args []string) { cmd.Usage() }
+
 	return cmd
 }
 
@@ -911,5 +920,119 @@ func (c *cmdClusterUpdateCertificate) Run(cmd *cobra.Command, args []string) err
 		fmt.Printf(i18n.G("Successfully updated cluster certificates for remote %s")+"\n", resource.remote)
 	}
 
+	return nil
+}
+
+type cmdClusterEvacuateAction struct {
+	global *cmdGlobal
+
+	flagForce bool
+}
+
+// Cluster member evacuation
+type cmdClusterEvacuate struct {
+	global  *cmdGlobal
+	cluster *cmdCluster
+	action  *cmdClusterEvacuateAction
+}
+
+func (c *cmdClusterEvacuate) Command() *cobra.Command {
+	cmdAction := cmdClusterEvacuateAction{global: c.global}
+	c.action = &cmdAction
+
+	cmd := c.action.Command("evacuate")
+	cmd.Aliases = []string{"evac"}
+	cmd.Use = usage("evacuate", i18n.G("[<remote>:]<member>"))
+	cmd.Short = i18n.G("Evacuate cluster member")
+	cmd.Long = cli.FormatSection(i18n.G("Description"), i18n.G(`Evacuate cluster member`))
+
+	return cmd
+}
+
+// Cluster member restore
+type cmdClusterRestore struct {
+	global  *cmdGlobal
+	cluster *cmdCluster
+	action  *cmdClusterEvacuateAction
+}
+
+func (c *cmdClusterRestore) Command() *cobra.Command {
+	cmdAction := cmdClusterEvacuateAction{global: c.global}
+	c.action = &cmdAction
+
+	cmd := c.action.Command("restore")
+	cmd.Use = usage("restore", i18n.G("[<remote>:]<member>"))
+	cmd.Short = i18n.G("Restore cluster member")
+	cmd.Long = cli.FormatSection(i18n.G("Description"), i18n.G(`Restore cluster member`))
+
+	return cmd
+}
+
+func (c *cmdClusterEvacuateAction) Command(action string) *cobra.Command {
+	cmd := &cobra.Command{}
+	cmd.RunE = c.Run
+	cmd.Flags().BoolVar(&c.flagForce, "force", false, i18n.G(`Force evacuation without user confirmation`)+"``")
+
+	return cmd
+}
+
+func (c *cmdClusterEvacuateAction) Run(cmd *cobra.Command, args []string) error {
+	// Quick checks.
+	exit, err := c.global.CheckArgs(cmd, args, 1, 1)
+	if exit {
+		return err
+	}
+
+	// Parse remote.
+	resources, err := c.global.ParseServers(args[0])
+	if err != nil {
+		return errors.Wrap(err, "Failed to parse servers")
+	}
+
+	resource := resources[0]
+
+	if resource.name == "" {
+		return fmt.Errorf(i18n.G("Missing cluster member name"))
+	}
+
+	if !c.flagForce && !cli.AskBool(fmt.Sprintf(i18n.G("Are you sure you want to %s cluster member %q? (yes/no) [default=no]: "), cmd.Name(), resource.name), "no") {
+		return nil
+	}
+
+	state := api.ClusterMemberStatePost{
+		Action: cmd.Name(),
+	}
+
+	op, err := resource.server.UpdateClusterMemberState(resource.name, state)
+	if err != nil {
+		return errors.Wrap(err, "Failed to update cluster member state")
+	}
+
+	var format string
+
+	if cmd.Name() == "restore" {
+		format = i18n.G("Restoring cluster member: %s")
+	} else {
+		format = i18n.G("Evacuating cluster member: %s")
+	}
+
+	progress := utils.ProgressRenderer{
+		Format: format,
+		Quiet:  c.global.flagQuiet,
+	}
+
+	_, err = op.AddHandler(progress.UpdateOp)
+	if err != nil {
+		progress.Done("")
+		return err
+	}
+
+	err = op.Wait()
+	if err != nil {
+		progress.Done("")
+		return err
+	}
+
+	progress.Done("")
 	return nil
 }
