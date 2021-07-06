@@ -58,6 +58,7 @@ type Driver interface {
 	GetVolumeUsage(vol Volume) (int64, error)
 	SetVolumeQuota(vol Volume, size string, allowUnsafeResize bool, op *operations.Operation) error
 	GetVolumeDiskPath(vol Volume) (string, error)
+	ListVolumes() ([]Volume, error)
 
 	// MountVolume mounts a storage volume (if not mounted) and increments reference counter.
 	MountVolume(vol Volume, op *operations.Operation) error
