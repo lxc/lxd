@@ -133,6 +133,10 @@ func (b *mockBackend) CheckInstanceBackupFileSnapshots(backupConf *backup.Config
 	return nil, nil
 }
 
+func (b *mockBackend) ListUnknownInstances(op *operations.Operation) (map[string][]*backup.Config, map[string]map[string][]*api.InstanceSnapshot, error) {
+	return nil, nil, nil
+}
+
 func (b *mockBackend) MigrateInstance(inst instance.Instance, conn io.ReadWriteCloser, args *migration.VolumeSourceArgs, op *operations.Operation) error {
 	return nil
 }
