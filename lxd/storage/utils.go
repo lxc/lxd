@@ -138,6 +138,18 @@ func InstanceTypeToVolumeType(instType instancetype.Type) (drivers.VolumeType, e
 	return "", fmt.Errorf("Invalid instance type")
 }
 
+// VolumeTypeToAPIInstanceType converts storage driver volume type to API instance type type.
+func VolumeTypeToAPIInstanceType(volType drivers.VolumeType) (api.InstanceType, error) {
+	switch volType {
+	case drivers.VolumeTypeContainer:
+		return api.InstanceTypeContainer, nil
+	case drivers.VolumeTypeVM:
+		return api.InstanceTypeVM, nil
+	}
+
+	return api.InstanceTypeAny, fmt.Errorf("Volume type doesn't have equivalent instance type")
+}
+
 // VolumeContentTypeToDBContentType converts volume type to internal code.
 func VolumeContentTypeToDBContentType(contentType drivers.ContentType) (int, error) {
 	switch contentType {
