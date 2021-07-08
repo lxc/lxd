@@ -85,6 +85,45 @@ type ProfileFilter struct {
 	Name    string
 }
 
+// GetProjectProfileNames returns slice of profile names keyed on the project they belong to.
+func (c *ClusterTx) GetProjectProfileNames() (map[string][]string, error) {
+	query := `
+	SELECT projects.name, profiles.name
+	FROM profiles
+	JOIN projects ON projects.id = profiles.project_id
+	`
+
+	rows, err := c.tx.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	res := make(map[string][]string)
+
+	for rows.Next() {
+		var projectName, profileName string
+
+		err = rows.Scan(&projectName, &profileName)
+		if err != nil {
+			return nil, err
+		}
+
+		if res[projectName] == nil {
+			res[projectName] = []string{profileName}
+		} else {
+			res[projectName] = append(res[projectName], profileName)
+		}
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // GetProfileNames returns the names of all profiles in the given project.
 func (c *Cluster) GetProfileNames(project string) ([]string, error) {
 	err := c.Transaction(func(tx *ClusterTx) error {
