@@ -1075,6 +1075,31 @@ func nodeIsOffline(threshold time.Duration, heartbeat time.Time) bool {
 	return heartbeat.Before(time.Now().Add(-threshold))
 }
 
+// LocalNodeIsEvacuated returns whether the local node is in the evacuated state.
+func (c *Cluster) LocalNodeIsEvacuated() bool {
+	isEvacuated := false
+
+	err := c.Transaction(func(tx *ClusterTx) error {
+		name, err := tx.GetLocalNodeName()
+		if err != nil {
+			return err
+		}
+
+		node, err := tx.GetNodeByName(name)
+		if err != nil {
+			return nil
+		}
+
+		isEvacuated = node.State == ClusterMemberStateEvacuated
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+
+	return isEvacuated
+}
+
 // DefaultOfflineThreshold is the default value for the
 // cluster.offline_threshold configuration key, expressed in seconds.
 const DefaultOfflineThreshold = 20
