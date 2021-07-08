@@ -137,6 +137,10 @@ func (b *mockBackend) ListUnknownInstances(op *operations.Operation) (map[string
 	return nil, nil, nil
 }
 
+func (b *mockBackend) ImportInstance(inst instance.Instance, op *operations.Operation) error {
+	return nil
+}
+
 func (b *mockBackend) MigrateInstance(inst instance.Instance, conn io.ReadWriteCloser, args *migration.VolumeSourceArgs, op *operations.Operation) error {
 	return nil
 }
