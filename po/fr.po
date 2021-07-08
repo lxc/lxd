@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: LXD\n"
 "Report-Msgid-Bugs-To: lxc-devel@lists.linuxcontainers.org\n"
-"POT-Creation-Date: 2021-07-09 10:08-0400\n"
+"POT-Creation-Date: 2021-07-15 07:56+0200\n"
 "PO-Revision-Date: 2019-01-04 18:07+0000\n"
 "Last-Translator: Deleted User <noreply+12102@weblate.org>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/linux-containers/"
@@ -345,7 +345,7 @@ msgstr ""
 "###\n"
 "### Notez que le nom est affiché mais ne peut être modifié"
 
-#: lxc/cluster.go:454
+#: lxc/cluster.go:463
 msgid ""
 "### This is a yaml representation of the cluster member.\n"
 "### Any line starting with a '# will be ignored."
@@ -361,7 +361,7 @@ msgstr ""
 msgid "%s (%d available)"
 msgstr "%s (%d de plus)"
 
-#: lxc/image.go:1057
+#: lxc/image.go:1049
 #, c-format
 msgid "%s (%d more)"
 msgstr "%s (%d de plus)"
@@ -500,16 +500,16 @@ msgstr ""
 msgid "<target>"
 msgstr ""
 
-#: lxc/alias.go:129 lxc/image.go:1022 lxc/image_alias.go:234
+#: lxc/alias.go:129 lxc/image.go:1014 lxc/image_alias.go:234
 msgid "ALIAS"
 msgstr "ALIAS"
 
-#: lxc/image.go:1023
+#: lxc/image.go:1015
 #, fuzzy
 msgid "ALIASES"
 msgstr "ALIAS"
 
-#: lxc/cluster.go:154 lxc/image.go:1028 lxc/list.go:486
+#: lxc/cluster.go:163 lxc/image.go:1020 lxc/list.go:486
 msgid "ARCHITECTURE"
 msgstr "ARCHITECTURE"
 
@@ -527,7 +527,7 @@ msgstr "Accepter le certificat"
 msgid "Access the expanded configuration"
 msgstr "Afficher la configuration étendue"
 
-#: lxc/warning.go:261 lxc/warning.go:262
+#: lxc/warning.go:259 lxc/warning.go:260
 msgid "Acknowledge warning"
 msgstr ""
 
@@ -599,7 +599,7 @@ msgstr "le serveur distant %s n'existe pas"
 msgid "Alias name missing"
 msgstr ""
 
-#: lxc/image.go:943
+#: lxc/image.go:935
 msgid "Aliases:"
 msgstr "Alias :"
 
@@ -608,7 +608,7 @@ msgstr "Alias :"
 msgid "Alternative certificate name"
 msgstr "Accepter le certificat"
 
-#: lxc/image.go:914 lxc/info.go:468
+#: lxc/image.go:906 lxc/info.go:468
 #, c-format
 msgid "Architecture: %s"
 msgstr "Architecture : %s"
@@ -617,6 +617,11 @@ msgstr "Architecture : %s"
 #, fuzzy, c-format
 msgid "Architecture: %v"
 msgstr "Architecture : %s"
+
+#: lxc/cluster.go:998
+#, c-format
+msgid "Are you sure you want to %s cluster member %q? (yes/no) [default=no]: "
+msgstr ""
 
 #: lxc/console.go:351
 msgid "As neither could be found, the raw SPICE socket can be found at:"
@@ -680,7 +685,7 @@ msgstr ""
 msgid "Auto update is only available in pull mode"
 msgstr ""
 
-#: lxc/image.go:953
+#: lxc/image.go:945
 #, c-format
 msgid "Auto update: %s"
 msgstr "Mise à jour auto. : %s"
@@ -720,7 +725,7 @@ msgstr ""
 msgid "Bad key=value pair: %s"
 msgstr ""
 
-#: lxc/image.go:734
+#: lxc/image.go:726
 #, c-format
 msgid "Bad property: %s"
 msgstr "Mauvaise propriété : %s"
@@ -799,7 +804,7 @@ msgstr "CRÉÉ À"
 msgid "CUDA Version: %v"
 msgstr "Afficher la version du client"
 
-#: lxc/image.go:952
+#: lxc/image.go:944
 #, fuzzy, c-format
 msgid "Cached: %s"
 msgstr "Créé : %s"
@@ -884,7 +889,7 @@ msgstr "Certificat client enregistré sur le serveur : "
 msgid "Client version: %s\n"
 msgstr "Afficher la version du client"
 
-#: lxc/cluster.go:811
+#: lxc/cluster.go:820
 #, c-format
 msgid "Cluster join token for %s:%s deleted"
 msgstr ""
@@ -905,11 +910,11 @@ msgstr ""
 msgid "Cluster member name"
 msgstr ""
 
-#: lxc/cluster.go:428
+#: lxc/cluster.go:437
 msgid "Clustering enabled"
 msgstr ""
 
-#: lxc/image.go:1013 lxc/list.go:130 lxc/storage_volume.go:1185
+#: lxc/image.go:1005 lxc/list.go:130 lxc/storage_volume.go:1185
 #: lxc/warning.go:93
 msgid "Columns"
 msgstr "Colonnes"
@@ -952,7 +957,7 @@ msgstr "Clé/valeur de configuration à appliquer au nouveau conteneur"
 msgid "Config key/value to apply to the target instance"
 msgstr "Clé/valeur de configuration à appliquer au nouveau conteneur"
 
-#: lxc/cluster.go:523 lxc/config.go:258 lxc/config.go:331
+#: lxc/cluster.go:532 lxc/config.go:258 lxc/config.go:331
 #: lxc/config_metadata.go:145 lxc/config_trust.go:231 lxc/image.go:434
 #: lxc/network.go:662 lxc/network_acl.go:531 lxc/profile.go:501
 #: lxc/project.go:312 lxc/storage.go:306 lxc/storage_volume.go:950
@@ -1055,27 +1060,27 @@ msgstr "erreur : %v"
 msgid "Could not create server cert dir"
 msgstr "Impossible de créer le dossier de stockage des certificats serveurs"
 
-#: lxc/cluster.go:875
+#: lxc/cluster.go:884
 #, fuzzy, c-format
 msgid "Could not find certificate file path: %s"
 msgstr "Impossible d'assainir le chemin %s"
 
-#: lxc/cluster.go:879
+#: lxc/cluster.go:888
 #, fuzzy, c-format
 msgid "Could not find certificate key file path: %s"
 msgstr "Impossible d'assainir le chemin %s"
 
-#: lxc/cluster.go:884
+#: lxc/cluster.go:893
 #, fuzzy, c-format
 msgid "Could not read certificate file: %s with error: %v"
 msgstr "Impossible d'assainir le chemin %s"
 
-#: lxc/cluster.go:889
+#: lxc/cluster.go:898
 #, fuzzy, c-format
 msgid "Could not read certificate key file: %s with error: %v"
 msgstr "Impossible d'assainir le chemin %s"
 
-#: lxc/cluster.go:906
+#: lxc/cluster.go:915
 #, c-format
 msgid "Could not write new remote certificate for remote '%s' with error: %v"
 msgstr ""
@@ -1175,7 +1180,7 @@ msgstr "Copie de l'image : %s"
 msgid "Create the instance with no profiles applied"
 msgstr "L'arrêt du conteneur a échoué !"
 
-#: lxc/image.go:921 lxc/info.go:470
+#: lxc/image.go:913 lxc/info.go:470
 #, c-format
 msgid "Created: %s"
 msgstr "Créé : %s"
@@ -1195,11 +1200,11 @@ msgstr "Création du conteneur"
 msgid "Current number of VFs: %d"
 msgstr ""
 
-#: lxc/cluster.go:153
+#: lxc/cluster.go:162
 msgid "DATABASE"
 msgstr ""
 
-#: lxc/cluster.go:156 lxc/image.go:1027 lxc/image_alias.go:237 lxc/list.go:489
+#: lxc/cluster.go:165 lxc/image.go:1019 lxc/image_alias.go:237 lxc/list.go:489
 #: lxc/network.go:902 lxc/network_acl.go:144 lxc/operation.go:163
 #: lxc/profile.go:624 lxc/project.go:473 lxc/storage.go:577
 #: lxc/storage_volume.go:1280
@@ -1227,7 +1232,7 @@ msgstr "Définir un algorithme de compression : pour image ou aucun"
 msgid "Delete a background operation (will attempt to cancel)"
 msgstr ""
 
-#: lxc/warning.go:360
+#: lxc/warning.go:358
 #, fuzzy
 msgid "Delete all warnings"
 msgstr "Récupération de l'image : %s"
@@ -1282,22 +1287,22 @@ msgstr ""
 msgid "Delete storage volumes"
 msgstr "Copie de l'image : %s"
 
-#: lxc/warning.go:356 lxc/warning.go:357
+#: lxc/warning.go:354 lxc/warning.go:355
 #, fuzzy
 msgid "Delete warning"
 msgstr "Récupération de l'image : %s"
 
 #: lxc/action.go:31 lxc/action.go:50 lxc/action.go:70 lxc/action.go:91
 #: lxc/alias.go:22 lxc/alias.go:57 lxc/alias.go:103 lxc/alias.go:147
-#: lxc/alias.go:198 lxc/cluster.go:31 lxc/cluster.go:93 lxc/cluster.go:174
-#: lxc/cluster.go:224 lxc/cluster.go:274 lxc/cluster.go:357 lxc/cluster.go:442
-#: lxc/cluster.go:593 lxc/cluster.go:655 lxc/cluster.go:753 lxc/cluster.go:832
-#: lxc/config.go:30 lxc/config.go:92 lxc/config.go:363 lxc/config.go:455
-#: lxc/config.go:613 lxc/config.go:733 lxc/config_device.go:24
-#: lxc/config_device.go:78 lxc/config_device.go:196 lxc/config_device.go:268
-#: lxc/config_device.go:339 lxc/config_device.go:432 lxc/config_device.go:523
-#: lxc/config_device.go:530 lxc/config_device.go:634 lxc/config_device.go:706
-#: lxc/config_metadata.go:27 lxc/config_metadata.go:55
+#: lxc/alias.go:198 lxc/cluster.go:31 lxc/cluster.go:102 lxc/cluster.go:183
+#: lxc/cluster.go:233 lxc/cluster.go:283 lxc/cluster.go:366 lxc/cluster.go:451
+#: lxc/cluster.go:602 lxc/cluster.go:664 lxc/cluster.go:762 lxc/cluster.go:841
+#: lxc/cluster.go:947 lxc/cluster.go:966 lxc/config.go:30 lxc/config.go:92
+#: lxc/config.go:363 lxc/config.go:455 lxc/config.go:613 lxc/config.go:733
+#: lxc/config_device.go:24 lxc/config_device.go:78 lxc/config_device.go:196
+#: lxc/config_device.go:268 lxc/config_device.go:339 lxc/config_device.go:432
+#: lxc/config_device.go:523 lxc/config_device.go:530 lxc/config_device.go:634
+#: lxc/config_device.go:706 lxc/config_metadata.go:27 lxc/config_metadata.go:55
 #: lxc/config_metadata.go:177 lxc/config_template.go:28
 #: lxc/config_template.go:68 lxc/config_template.go:111
 #: lxc/config_template.go:153 lxc/config_template.go:239
@@ -1307,8 +1312,8 @@ msgstr "Récupération de l'image : %s"
 #: lxc/exec.go:40 lxc/export.go:32 lxc/file.go:72 lxc/file.go:108
 #: lxc/file.go:157 lxc/file.go:220 lxc/file.go:410 lxc/image.go:38
 #: lxc/image.go:144 lxc/image.go:290 lxc/image.go:341 lxc/image.go:466
-#: lxc/image.go:625 lxc/image.go:853 lxc/image.go:988 lxc/image.go:1286
-#: lxc/image.go:1365 lxc/image.go:1424 lxc/image.go:1476 lxc/image.go:1532
+#: lxc/image.go:625 lxc/image.go:845 lxc/image.go:980 lxc/image.go:1278
+#: lxc/image.go:1357 lxc/image.go:1416 lxc/image.go:1468 lxc/image.go:1524
 #: lxc/image_alias.go:25 lxc/image_alias.go:61 lxc/image_alias.go:108
 #: lxc/image_alias.go:153 lxc/image_alias.go:255 lxc/import.go:29
 #: lxc/info.go:34 lxc/init.go:40 lxc/launch.go:25 lxc/list.go:48 lxc/main.go:50
@@ -1345,8 +1350,8 @@ msgstr "Récupération de l'image : %s"
 #: lxc/storage_volume.go:1591 lxc/storage_volume.go:1690
 #: lxc/storage_volume.go:1724 lxc/storage_volume.go:1822
 #: lxc/storage_volume.go:1889 lxc/storage_volume.go:2030 lxc/version.go:22
-#: lxc/warning.go:30 lxc/warning.go:72 lxc/warning.go:262 lxc/warning.go:303
-#: lxc/warning.go:357
+#: lxc/warning.go:30 lxc/warning.go:72 lxc/warning.go:260 lxc/warning.go:301
+#: lxc/warning.go:355
 msgid "Description"
 msgstr ""
 
@@ -1433,7 +1438,7 @@ msgstr "  Disque utilisé :"
 msgid "Disks:"
 msgstr "  Disque utilisé :"
 
-#: lxc/cluster.go:279
+#: lxc/cluster.go:288
 #, fuzzy
 msgid "Don't require user confirmation for using --force"
 msgstr "Requérir une confirmation de l'utilisateur"
@@ -1461,7 +1466,7 @@ msgid ""
 "(interrupt two more times to force)"
 msgstr ""
 
-#: lxc/cluster.go:441 lxc/cluster.go:442
+#: lxc/cluster.go:450 lxc/cluster.go:451
 #, fuzzy
 msgid "Edit cluster member configurations as YAML"
 msgstr "Clé de configuration invalide"
@@ -1521,17 +1526,17 @@ msgstr ""
 msgid "Edit trust configurations as YAML"
 msgstr "Clé de configuration invalide"
 
-#: lxc/image.go:1039 lxc/list.go:533 lxc/storage_volume.go:1302
+#: lxc/image.go:1031 lxc/list.go:533 lxc/storage_volume.go:1302
 #: lxc/warning.go:234
 #, c-format
 msgid "Empty column entry (redundant, leading or trailing command) in '%s'"
 msgstr ""
 
-#: lxc/cluster.go:356
+#: lxc/cluster.go:365
 msgid "Enable clustering on a single non-clustered LXD server"
 msgstr ""
 
-#: lxc/cluster.go:357
+#: lxc/cluster.go:366
 msgid ""
 "Enable clustering on a single non-clustered LXD server\n"
 "\n"
@@ -1559,6 +1564,23 @@ msgstr "Conteneur éphémère"
 #, c-format
 msgid "Error updating template file: %s"
 msgstr "Erreur de mise à jour du modèle de fichier : %s"
+
+#: lxc/cluster.go:946 lxc/cluster.go:947
+#, fuzzy
+msgid "Evacuate cluster member"
+msgstr ""
+"Supprimer des conteneurs ou des instantanés.\n"
+"\n"
+"lxc delete [<remote>:]<container>[/<snapshot>] [<remote>:][<container>[/"
+"<snapshot>]...]\n"
+"\n"
+"Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
+"(configuration, instantanés, …)."
+
+#: lxc/cluster.go:1016
+#, fuzzy, c-format
+msgid "Evacuating cluster member: %s"
+msgstr "Vous devez fournir le nom d'un conteneur pour : "
 
 #: lxc/monitor.go:46
 msgid "Event type to listen for"
@@ -1592,12 +1614,12 @@ msgstr ""
 "sélectionné si à la fois stdin et stdout sont des terminaux (stderr\n"
 "est ignoré)."
 
-#: lxc/image.go:927
+#: lxc/image.go:919
 #, c-format
 msgid "Expires: %s"
 msgstr "Expire : %s"
 
-#: lxc/image.go:929
+#: lxc/image.go:921
 msgid "Expires: never"
 msgstr "N'expire jamais"
 
@@ -1643,7 +1665,7 @@ msgstr "Import de l'image : %s"
 msgid "Exporting the image: %s"
 msgstr "Import de l'image : %s"
 
-#: lxc/cluster.go:155
+#: lxc/cluster.go:164
 msgid "FAILURE DOMAIN"
 msgstr ""
 
@@ -1652,7 +1674,7 @@ msgstr ""
 msgid "FILENAME"
 msgstr "NOM"
 
-#: lxc/config_trust.go:325 lxc/image.go:1024 lxc/image.go:1025
+#: lxc/config_trust.go:325 lxc/image.go:1016 lxc/image.go:1017
 #: lxc/image_alias.go:235
 msgid "FINGERPRINT"
 msgstr "EMPREINTE"
@@ -1671,7 +1693,7 @@ msgstr "Profil à appliquer au nouveau conteneur"
 msgid "Failed to create alias %s"
 msgstr "Échec lors de la génération de 'lxc.%s.1': %v"
 
-#: lxc/copy.go:410
+#: lxc/copy.go:402
 #, fuzzy
 msgid "Failed to get the new instance name"
 msgstr "Profil à appliquer au nouveau conteneur"
@@ -1695,16 +1717,21 @@ msgstr "Mode rapide (identique à --columns=nsacPt"
 msgid "Filtering isn't supported yet"
 msgstr ""
 
-#: lxc/image.go:912
+#: lxc/image.go:904
 #, c-format
 msgid "Fingerprint: %s"
 msgstr "Empreinte : %s"
+
+#: lxc/cluster.go:974
+#, fuzzy
+msgid "Force evacuation without user confirmation"
+msgstr "Requérir une confirmation de l'utilisateur"
 
 #: lxc/exec.go:55
 msgid "Force pseudo-terminal allocation"
 msgstr "Forcer l'allocation d'un pseudo-terminal"
 
-#: lxc/cluster.go:278
+#: lxc/cluster.go:287
 msgid "Force removing a member, even if degraded"
 msgstr ""
 
@@ -1722,7 +1749,7 @@ msgstr "Forcer la suppression des conteneurs arrêtés"
 msgid "Force using the local unix socket"
 msgstr "Forcer l'utilisation de la socket unix locale"
 
-#: lxc/cluster.go:286
+#: lxc/cluster.go:295
 #, c-format
 msgid ""
 "Forcefully removing a server from the cluster should only be done as a last\n"
@@ -1746,8 +1773,8 @@ msgid ""
 "Are you really sure you want to force removing %s? (yes/no): "
 msgstr ""
 
-#: lxc/alias.go:105 lxc/cluster.go:95 lxc/cluster.go:656
-#: lxc/config_template.go:241 lxc/config_trust.go:267 lxc/image.go:1014
+#: lxc/alias.go:105 lxc/cluster.go:104 lxc/cluster.go:665
+#: lxc/config_template.go:241 lxc/config_trust.go:267 lxc/image.go:1006
 #: lxc/image_alias.go:158 lxc/list.go:131 lxc/network.go:833 lxc/network.go:926
 #: lxc/network_acl.go:94 lxc/operation.go:107 lxc/profile.go:584
 #: lxc/project.go:394 lxc/project.go:749 lxc/remote.go:530 lxc/storage.go:518
@@ -1798,7 +1825,7 @@ msgstr "Génération d'un certificat client. Ceci peut prendre une minute…"
 msgid "Get a summary of resource allocations"
 msgstr ""
 
-#: lxc/image.go:1423 lxc/image.go:1424
+#: lxc/image.go:1415 lxc/image.go:1416
 msgid "Get image properties"
 msgstr ""
 
@@ -1918,7 +1945,7 @@ msgstr ""
 msgid "Ignore the instance state"
 msgstr "Ignorer l'état du conteneur (seulement pour start)"
 
-#: lxc/image.go:1346
+#: lxc/image.go:1338
 msgid "Image already up to date."
 msgstr ""
 
@@ -1935,21 +1962,21 @@ msgstr ""
 msgid "Image exported successfully!"
 msgstr "Image copiée avec succès !"
 
-#: lxc/image.go:313 lxc/image.go:1309
+#: lxc/image.go:313 lxc/image.go:1301
 msgid "Image identifier missing"
 msgstr ""
 
-#: lxc/image.go:381 lxc/image.go:1500
+#: lxc/image.go:381 lxc/image.go:1492
 #, fuzzy, c-format
 msgid "Image identifier missing: %s"
 msgstr "Image importée avec l'empreinte : %s"
 
-#: lxc/image.go:824
+#: lxc/image.go:816
 #, c-format
 msgid "Image imported with fingerprint: %s"
 msgstr "Image importée avec l'empreinte : %s"
 
-#: lxc/image.go:1344
+#: lxc/image.go:1336
 #, fuzzy
 msgid "Image refreshed successfully!"
 msgstr "Image copiée avec succès !"
@@ -2012,7 +2039,7 @@ msgstr ""
 msgid "Instance name is mandatory"
 msgstr "Le nom du conteneur est obligatoire"
 
-#: lxc/copy.go:416 lxc/init.go:341
+#: lxc/copy.go:408 lxc/init.go:341
 #, fuzzy, c-format
 msgid "Instance name is: %s"
 msgstr "Le nom du conteneur est : %s"
@@ -2135,16 +2162,16 @@ msgstr ""
 msgid "LXD automatically uses either spicy or remote-viewer when present."
 msgstr ""
 
-#: lxc/cluster.go:129 lxc/cluster.go:690 lxc/cluster.go:780 lxc/cluster.go:871
+#: lxc/cluster.go:138 lxc/cluster.go:699 lxc/cluster.go:789 lxc/cluster.go:880
 msgid "LXD server isn't part of a cluster"
 msgstr ""
 
-#: lxc/image.go:933
+#: lxc/image.go:925
 #, c-format
 msgid "Last used: %s"
 msgstr "Dernière utilisation : %s"
 
-#: lxc/image.go:935
+#: lxc/image.go:927
 msgid "Last used: never"
 msgstr "Dernière utilisation : jamais"
 
@@ -2167,12 +2194,12 @@ msgstr ""
 msgid "List aliases"
 msgstr "Alias :"
 
-#: lxc/cluster.go:654 lxc/cluster.go:655
+#: lxc/cluster.go:663 lxc/cluster.go:664
 #, fuzzy
 msgid "List all active cluster member join tokens"
 msgstr "Vous devez fournir le nom d'un conteneur pour : "
 
-#: lxc/cluster.go:92 lxc/cluster.go:93
+#: lxc/cluster.go:101 lxc/cluster.go:102
 msgid "List all the cluster members"
 msgstr ""
 
@@ -2212,11 +2239,11 @@ msgid ""
 "Filters may be part of the image hash or part of the image alias name.\n"
 msgstr ""
 
-#: lxc/image.go:987
+#: lxc/image.go:979
 msgid "List images"
 msgstr ""
 
-#: lxc/image.go:988
+#: lxc/image.go:980
 msgid ""
 "List images\n"
 "\n"
@@ -2513,7 +2540,7 @@ msgstr ""
 msgid "MEMORY USAGE%"
 msgstr ""
 
-#: lxc/cluster.go:158
+#: lxc/cluster.go:167
 msgid "MESSAGE"
 msgstr ""
 
@@ -2656,17 +2683,17 @@ msgstr ""
 msgid "Mdev profiles:"
 msgstr "Profils : %s"
 
-#: lxc/cluster.go:636
+#: lxc/cluster.go:645
 #, fuzzy, c-format
 msgid "Member %s join token:"
 msgstr "Profil %s ajouté à %s"
 
-#: lxc/cluster.go:341
+#: lxc/cluster.go:350
 #, fuzzy, c-format
 msgid "Member %s removed"
 msgstr "Profil %s supprimé de %s"
 
-#: lxc/cluster.go:254
+#: lxc/cluster.go:263
 #, fuzzy, c-format
 msgid "Member %s renamed to %s"
 msgstr "Profil %s ajouté à %s"
@@ -2707,7 +2734,7 @@ msgstr ""
 msgid "Missing certificate fingerprint"
 msgstr "Empreinte du certificat : %s"
 
-#: lxc/cluster.go:475 lxc/cluster.go:616
+#: lxc/cluster.go:484 lxc/cluster.go:625 lxc/cluster.go:995
 #, fuzzy
 msgid "Missing cluster member name"
 msgstr "Vous devez fournir le nom d'un conteneur pour : "
@@ -2846,7 +2873,7 @@ msgstr ""
 msgid "Must supply instance name for: "
 msgstr "Vous devez fournir le nom d'un conteneur pour : "
 
-#: lxc/cluster.go:151 lxc/cluster.go:736 lxc/config_trust.go:323
+#: lxc/cluster.go:160 lxc/cluster.go:745 lxc/config_trust.go:323
 #: lxc/list.go:496 lxc/network.go:897 lxc/network_acl.go:143 lxc/profile.go:623
 #: lxc/project.go:468 lxc/remote.go:589 lxc/storage.go:570
 #: lxc/storage_volume.go:1279
@@ -2966,7 +2993,7 @@ msgstr "Nouvel alias à définir sur la cible"
 msgid "New key/value to apply to a specific device"
 msgstr "Clé/valeur de configuration à appliquer au nouveau conteneur"
 
-#: lxc/cluster.go:818
+#: lxc/cluster.go:827
 #, c-format
 msgid "No cluster join token for member %s on remote: %s"
 msgstr ""
@@ -3075,7 +3102,7 @@ msgstr ""
 msgid "PROTOCOL"
 msgstr "PROTOCOLE"
 
-#: lxc/image.go:1026 lxc/remote.go:593
+#: lxc/image.go:1018 lxc/remote.go:593
 msgid "PUBLIC"
 msgstr "PUBLIC"
 
@@ -3124,7 +3151,7 @@ msgstr "État : %s"
 msgid "Ports:"
 msgstr ""
 
-#: lxc/cluster.go:524 lxc/config.go:259 lxc/config.go:332
+#: lxc/cluster.go:533 lxc/config.go:259 lxc/config.go:332
 #: lxc/config_metadata.go:146 lxc/config_template.go:206
 #: lxc/config_trust.go:232 lxc/image.go:435 lxc/network.go:663
 #: lxc/network_acl.go:532 lxc/profile.go:502 lxc/project.go:313
@@ -3209,12 +3236,12 @@ msgstr "Profil à appliquer au nouveau conteneur"
 msgid "Profiles %s applied to %s"
 msgstr "Profils %s appliqués à %s"
 
-#: lxc/image.go:965
+#: lxc/image.go:957
 #, fuzzy
 msgid "Profiles:"
 msgstr "Profils : %s"
 
-#: lxc/image.go:963
+#: lxc/image.go:955
 #, fuzzy
 msgid "Profiles: "
 msgstr "Profils : %s"
@@ -3243,11 +3270,11 @@ msgstr "Profil %s ajouté à %s"
 msgid "Project to use for the remote"
 msgstr ""
 
-#: lxc/image.go:938
+#: lxc/image.go:930
 msgid "Properties:"
 msgstr "Propriétés :"
 
-#: lxc/image.go:1459
+#: lxc/image.go:1451
 msgid "Property not found"
 msgstr ""
 
@@ -3255,7 +3282,7 @@ msgstr ""
 msgid "Public image server"
 msgstr "Serveur d'images public"
 
-#: lxc/image.go:916
+#: lxc/image.go:908
 #, c-format
 msgid "Public: %s"
 msgstr "Public : %s"
@@ -3294,7 +3321,7 @@ msgstr ""
 msgid "Query path must start with /"
 msgstr ""
 
-#: lxc/image.go:471 lxc/image.go:856 lxc/image.go:1368
+#: lxc/image.go:471 lxc/image.go:848 lxc/image.go:1360
 msgid "Query virtual machine images"
 msgstr ""
 
@@ -3313,17 +3340,17 @@ msgstr ""
 msgid "Recursively transfer files"
 msgstr "Pousser ou récupérer des fichiers récursivement"
 
-#: lxc/image.go:1285 lxc/image.go:1286
+#: lxc/image.go:1277 lxc/image.go:1278
 #, fuzzy
 msgid "Refresh images"
 msgstr "Récupération de l'image : %s"
 
-#: lxc/copy.go:377
+#: lxc/copy.go:369
 #, fuzzy, c-format
 msgid "Refreshing instance: %s"
 msgstr "Ignorer l'état du conteneur (seulement pour start)"
 
-#: lxc/image.go:1314
+#: lxc/image.go:1306
 #, fuzzy, c-format
 msgid "Refreshing the image: %s"
 msgstr "Récupération de l'image : %s"
@@ -3382,7 +3409,7 @@ msgstr "Serveur distant : %s"
 msgid "Remove %s (yes/no): "
 msgstr "Supprimer %s (oui/non) : "
 
-#: lxc/cluster.go:273 lxc/cluster.go:274
+#: lxc/cluster.go:282 lxc/cluster.go:283
 msgid "Remove a member from the cluster"
 msgstr ""
 
@@ -3418,7 +3445,7 @@ msgstr "Création du conteneur"
 msgid "Remove trusted clients"
 msgstr ""
 
-#: lxc/cluster.go:223 lxc/cluster.go:224
+#: lxc/cluster.go:232 lxc/cluster.go:233
 msgid "Rename a cluster member"
 msgstr ""
 
@@ -3473,7 +3500,7 @@ msgstr ""
 msgid "Render: %s (%s)"
 msgstr ""
 
-#: lxc/cluster.go:592 lxc/cluster.go:593
+#: lxc/cluster.go:601 lxc/cluster.go:602
 msgid "Request a join token for adding a cluster member"
 msgstr ""
 
@@ -3497,6 +3524,11 @@ msgid ""
 "\n"
 "The opposite of \"lxc pause\" is \"lxc start\"."
 msgstr "Le pendant de `lxc pause` est `lxc start`."
+
+#: lxc/cluster.go:965 lxc/cluster.go:966
+#, fuzzy
+msgid "Restore cluster member"
+msgstr "Vous devez fournir le nom d'un conteneur pour : "
 
 #: lxc/restore.go:23
 #, fuzzy
@@ -3531,6 +3563,11 @@ msgstr ""
 msgid "Restore storage volume snapshots"
 msgstr "Forcer le conteneur à s'arrêter"
 
+#: lxc/cluster.go:1014
+#, fuzzy, c-format
+msgid "Restoring cluster member: %s"
+msgstr "Vous devez fournir le nom d'un conteneur pour : "
+
 #: lxc/config_trust.go:80
 msgid "Restrict the certificate to one or more projects"
 msgstr ""
@@ -3545,7 +3582,7 @@ msgstr "Forcer l'arrêt du conteneur (seulement pour stop)"
 msgid "Retrieving image: %s"
 msgstr "Récupération de l'image : %s"
 
-#: lxc/cluster.go:752
+#: lxc/cluster.go:761
 #, fuzzy
 msgid "Revoke cluster member join token"
 msgstr "Vous devez fournir le nom d'un conteneur pour : "
@@ -3558,7 +3595,7 @@ msgstr ""
 msgid "SEVERITY"
 msgstr ""
 
-#: lxc/image.go:1029
+#: lxc/image.go:1021
 msgid "SIZE"
 msgstr "TAILLE"
 
@@ -3574,7 +3611,7 @@ msgstr "SOURCE"
 msgid "SR-IOV information:"
 msgstr ""
 
-#: lxc/cluster.go:157 lxc/list.go:501 lxc/network.go:906 lxc/storage.go:580
+#: lxc/cluster.go:166 lxc/list.go:501 lxc/network.go:906 lxc/storage.go:580
 msgid "STATE"
 msgstr "ÉTAT"
 
@@ -3646,7 +3683,7 @@ msgid ""
 "    lxc profile device set [<remote>:]<profile> <device> <key> <value>"
 msgstr ""
 
-#: lxc/image.go:1475 lxc/image.go:1476
+#: lxc/image.go:1467 lxc/image.go:1468
 msgid "Set image properties"
 msgstr ""
 
@@ -3777,7 +3814,7 @@ msgstr ""
 msgid "Show content of instance file templates"
 msgstr "L'arrêt du conteneur a échoué !"
 
-#: lxc/cluster.go:173 lxc/cluster.go:174
+#: lxc/cluster.go:182 lxc/cluster.go:183
 msgid "Show details of a cluster member"
 msgstr ""
 
@@ -3790,7 +3827,7 @@ msgstr ""
 msgid "Show full device configuration"
 msgstr "Afficher la configuration étendue"
 
-#: lxc/image.go:1364 lxc/image.go:1365
+#: lxc/image.go:1356 lxc/image.go:1357
 msgid "Show image properties"
 msgstr ""
 
@@ -3884,7 +3921,7 @@ msgstr ""
 msgid "Show trust configurations"
 msgstr "Afficher la configuration étendue"
 
-#: lxc/image.go:852 lxc/image.go:853
+#: lxc/image.go:844 lxc/image.go:845
 msgid "Show useful information about images"
 msgstr ""
 
@@ -3892,11 +3929,11 @@ msgstr ""
 msgid "Show useful information about storage pools"
 msgstr ""
 
-#: lxc/warning.go:302 lxc/warning.go:303
+#: lxc/warning.go:300 lxc/warning.go:301
 msgid "Show warning"
 msgstr ""
 
-#: lxc/image.go:913
+#: lxc/image.go:905
 #, c-format
 msgid "Size: %.2fMB"
 msgstr "Taille : %.2f Mo"
@@ -3925,7 +3962,7 @@ msgstr ""
 msgid "Some instances failed to %s"
 msgstr "L'arrêt du conteneur a échoué !"
 
-#: lxc/image.go:956
+#: lxc/image.go:948
 msgid "Source:"
 msgstr "Source :"
 
@@ -4013,7 +4050,7 @@ msgstr "Image copiée avec succès !"
 msgid "Store the instance state"
 msgstr "Forcer l'arrêt du conteneur (seulement pour stop)"
 
-#: lxc/cluster.go:911
+#: lxc/cluster.go:920
 #, c-format
 msgid "Successfully updated cluster certificates for remote %s"
 msgstr ""
@@ -4050,11 +4087,11 @@ msgstr "impossible de supprimer le serveur distant par défaut"
 msgid "TARGET"
 msgstr ""
 
-#: lxc/cluster.go:737
+#: lxc/cluster.go:746
 msgid "TOKEN"
 msgstr ""
 
-#: lxc/config_trust.go:322 lxc/image.go:1031 lxc/image_alias.go:236
+#: lxc/config_trust.go:322 lxc/image.go:1023 lxc/image_alias.go:236
 #: lxc/list.go:502 lxc/network.go:898 lxc/network.go:973 lxc/operation.go:162
 #: lxc/storage_volume.go:1278 lxc/warning.go:214
 msgid "TYPE"
@@ -4172,7 +4209,7 @@ msgstr ""
 msgid "Time to wait for the instance before killing it"
 msgstr "Temps d'attente du conteneur avant de le tuer"
 
-#: lxc/image.go:917
+#: lxc/image.go:909
 msgid "Timestamps:"
 msgstr "Horodatage :"
 
@@ -4222,12 +4259,12 @@ msgstr ""
 msgid "Transfer mode. One of pull (default), push or relay."
 msgstr ""
 
-#: lxc/image.go:745
+#: lxc/image.go:737
 #, c-format
 msgid "Transferring image: %s"
 msgstr "Transfert de l'image : %s"
 
-#: lxc/copy.go:343 lxc/move.go:284
+#: lxc/copy.go:335 lxc/move.go:284
 #, fuzzy, c-format
 msgid "Transferring instance: %s"
 msgstr "Transfert de l'image : %s"
@@ -4243,7 +4280,7 @@ msgid ""
 "SPICE graphical output"
 msgstr ""
 
-#: lxc/image.go:915 lxc/info.go:268 lxc/info.go:482
+#: lxc/image.go:907 lxc/info.go:268 lxc/info.go:482
 #, fuzzy, c-format
 msgid "Type: %s"
 msgstr "Expire : %s"
@@ -4257,11 +4294,11 @@ msgstr "Type : éphémère"
 msgid "UNLIMITED"
 msgstr ""
 
-#: lxc/image.go:1030
+#: lxc/image.go:1022
 msgid "UPLOAD DATE"
 msgstr "DATE DE PUBLICATION"
 
-#: lxc/cluster.go:152 lxc/remote.go:590
+#: lxc/cluster.go:161 lxc/remote.go:590
 msgid "URL"
 msgstr "URL"
 
@@ -4288,7 +4325,7 @@ msgstr ""
 msgid "Unable to create a temporary file: %v"
 msgstr ""
 
-#: lxc/image.go:1046 lxc/list.go:547 lxc/storage_volume.go:1309
+#: lxc/image.go:1038 lxc/list.go:547 lxc/storage_volume.go:1309
 #: lxc/warning.go:241
 #, c-format
 msgid "Unknown column shorthand char '%c' in '%s'"
@@ -4309,7 +4346,7 @@ msgstr "tous les profils de la source n'existent pas sur la cible"
 msgid "Unset device configuration keys"
 msgstr "Clé de configuration invalide"
 
-#: lxc/image.go:1531 lxc/image.go:1532
+#: lxc/image.go:1523 lxc/image.go:1524
 msgid "Unset image properties"
 msgstr ""
 
@@ -4353,18 +4390,18 @@ msgstr "Clé de configuration invalide"
 msgid "Unsupported instance type: %s"
 msgstr ""
 
-#: lxc/cluster.go:831
+#: lxc/cluster.go:840
 #, fuzzy
 msgid "Update cluster certificate"
 msgstr "Accepter le certificat"
 
-#: lxc/cluster.go:833
+#: lxc/cluster.go:842
 msgid ""
 "Update cluster certificate with PEM certificate and key read from input "
 "files."
 msgstr ""
 
-#: lxc/image.go:924
+#: lxc/image.go:916
 #, c-format
 msgid "Uploaded: %s"
 msgstr "Publié : %s"
@@ -4383,7 +4420,7 @@ msgstr "Publié : %s"
 msgid "User ID to run the command as (default 0)"
 msgstr ""
 
-#: lxc/cluster.go:305 lxc/delete.go:48
+#: lxc/cluster.go:314 lxc/delete.go:48
 #, fuzzy
 msgid "User aborted delete operation"
 msgstr "L'utilisateur a annulé l'opération de suppression."
@@ -4482,7 +4519,7 @@ msgstr ""
 "\n"
 "lxc %s [<remote>:]<container> [[<remote>:]<container>...]%s"
 
-#: lxc/cluster.go:90 lxc/cluster.go:653 lxc/config_trust.go:262
+#: lxc/cluster.go:99 lxc/cluster.go:662 lxc/config_trust.go:262
 #: lxc/monitor.go:27 lxc/network.go:826 lxc/network_acl.go:88
 #: lxc/operation.go:102 lxc/profile.go:577 lxc/project.go:389
 #: lxc/storage.go:513 lxc/version.go:20 lxc/warning.go:69
@@ -4498,7 +4535,7 @@ msgstr ""
 "\n"
 "lxc %s [<remote>:]<container> [[<remote>:]<container>...]%s"
 
-#: lxc/cluster.go:829
+#: lxc/cluster.go:838
 #, fuzzy
 msgid "[<remote>:] <cert.crt> <cert.key>"
 msgstr ""
@@ -4530,7 +4567,7 @@ msgstr ""
 "Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
 "(configuration, instantanés, …)."
 
-#: lxc/cluster.go:355
+#: lxc/cluster.go:364
 #, fuzzy
 msgid "[<remote>:] <name>"
 msgstr ""
@@ -4542,7 +4579,7 @@ msgstr ""
 "Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
 "(configuration, instantanés, …)."
 
-#: lxc/image.go:985 lxc/list.go:45
+#: lxc/image.go:977 lxc/list.go:45
 #, fuzzy
 msgid "[<remote>:] [<filter>...]"
 msgstr ""
@@ -4651,7 +4688,7 @@ msgstr ""
 "\n"
 "lxc %s [<remote>:]<container> [[<remote>:]<container>...]%s"
 
-#: lxc/cluster.go:440
+#: lxc/cluster.go:449
 #, fuzzy
 msgid "[<remote>:]<cluster member>"
 msgstr ""
@@ -4675,7 +4712,7 @@ msgstr ""
 "Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
 "(configuration, instantanés, …)."
 
-#: lxc/image.go:339 lxc/image.go:851 lxc/image.go:1363
+#: lxc/image.go:339 lxc/image.go:843 lxc/image.go:1355
 #, fuzzy
 msgid "[<remote>:]<image>"
 msgstr ""
@@ -4687,7 +4724,7 @@ msgstr ""
 "Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
 "(configuration, instantanés, …)."
 
-#: lxc/image.go:1422 lxc/image.go:1530
+#: lxc/image.go:1414 lxc/image.go:1522
 #, fuzzy
 msgid "[<remote>:]<image> <key>"
 msgstr ""
@@ -4699,7 +4736,7 @@ msgstr ""
 "Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
 "(configuration, instantanés, …)."
 
-#: lxc/image.go:1474
+#: lxc/image.go:1466
 #, fuzzy
 msgid "[<remote>:]<image> <key> <value>"
 msgstr ""
@@ -4731,7 +4768,7 @@ msgstr ""
 "\n"
 "lxc %s [<remote>:]<container> [[<remote>:]<container>...]%s"
 
-#: lxc/image.go:287 lxc/image.go:1284
+#: lxc/image.go:287 lxc/image.go:1276
 #, fuzzy
 msgid "[<remote>:]<image> [[<remote>:]<image>...]"
 msgstr ""
@@ -4960,7 +4997,8 @@ msgstr ""
 "Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
 "(configuration, instantanés, …)."
 
-#: lxc/cluster.go:172 lxc/cluster.go:271 lxc/cluster.go:591
+#: lxc/cluster.go:181 lxc/cluster.go:280 lxc/cluster.go:600 lxc/cluster.go:945
+#: lxc/cluster.go:964
 #, fuzzy
 msgid "[<remote>:]<member>"
 msgstr ""
@@ -4972,7 +5010,7 @@ msgstr ""
 "Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
 "(configuration, instantanés, …)."
 
-#: lxc/cluster.go:221
+#: lxc/cluster.go:230
 #, fuzzy
 msgid "[<remote>:]<member> <new-name>"
 msgstr ""
@@ -5343,7 +5381,7 @@ msgstr ""
 "Détruit les conteneurs ou les instantanés ainsi que toute donnée associée "
 "(configuration, instantanés, …)."
 
-#: lxc/cluster.go:751
+#: lxc/cluster.go:760
 #, fuzzy
 msgid "[<remote>:]<token>"
 msgstr ""
@@ -5351,7 +5389,7 @@ msgstr ""
 "\n"
 "lxc %s [<remote>:]<container> [[<remote>:]<container>...]%s"
 
-#: lxc/warning.go:259 lxc/warning.go:301 lxc/warning.go:354
+#: lxc/warning.go:257 lxc/warning.go:299 lxc/warning.go:352
 #, fuzzy
 msgid "[<remote>:]<warning-uuid>"
 msgstr ""
@@ -5424,7 +5462,7 @@ msgstr "Swap (courant)"
 msgid "description"
 msgstr ""
 
-#: lxc/image.go:902
+#: lxc/image.go:894
 msgid "disabled"
 msgstr "désactivé"
 
@@ -5432,7 +5470,7 @@ msgstr "désactivé"
 msgid "driver"
 msgstr ""
 
-#: lxc/image.go:904
+#: lxc/image.go:896
 msgid "enabled"
 msgstr "activé"
 
@@ -5468,7 +5506,7 @@ msgid ""
 "    Rename existing alias \"list\" to \"my-list\"."
 msgstr ""
 
-#: lxc/cluster.go:444
+#: lxc/cluster.go:453
 msgid ""
 "lxc cluster edit <cluster member> < member.yaml\n"
 "    Update a cluster member using the content of member.yaml"
@@ -5716,7 +5754,7 @@ msgstr "non"
 msgid "name"
 msgstr ""
 
-#: lxc/image.go:892 lxc/image.go:897 lxc/image.go:1084
+#: lxc/image.go:884 lxc/image.go:889 lxc/image.go:1076
 msgid "no"
 msgstr "non"
 
@@ -5761,8 +5799,8 @@ msgstr ""
 msgid "y"
 msgstr ""
 
-#: lxc/cluster.go:304 lxc/delete.go:47 lxc/image.go:894 lxc/image.go:899
-#: lxc/image.go:1082
+#: lxc/cluster.go:313 lxc/delete.go:47 lxc/image.go:886 lxc/image.go:891
+#: lxc/image.go:1074
 msgid "yes"
 msgstr "oui"
 
