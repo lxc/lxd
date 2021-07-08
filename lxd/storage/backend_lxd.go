@@ -3986,6 +3986,92 @@ func (b *lxdBackend) ListUnknownInstances(op *operations.Operation) (map[string]
 	return projectInsts, projectInstSnapshots, nil
 }
 
+// ImportInstance takes an existing instance volume on the storage backend and ensures that the volume directories
+// and symlinks are restored as needed to make it operational with LXD. Used during the recovery import stage.
+func (b *lxdBackend) ImportInstance(inst instance.Instance, op *operations.Operation) error {
+	logger := logging.AddContext(b.logger, log.Ctx{"project": inst.Project(), "instance": inst.Name()})
+	logger.Debug("ImportInstance started")
+	defer logger.Debug("ImportInstance finished")
+
+	volType, err := InstanceTypeToVolumeType(inst.Type())
+	if err != nil {
+		return err
+	}
+
+	// Get any snapshots the instance has in the format <instance name>/<snapshot name>.
+	snapshots, err := b.state.Cluster.GetInstanceSnapshotsNames(inst.Project(), inst.Name())
+	if err != nil {
+		return err
+	}
+
+	revert := revert.New()
+	defer revert.Fail()
+
+	contentType := InstanceContentType(inst)
+
+	// Get the volume name on storage.
+	volStorageName := project.Instance(inst.Project(), inst.Name())
+
+	vol := b.newVolume(volType, contentType, volStorageName, nil)
+
+	if inst.IsRunning() {
+		// If the instance is running then this implies the volume is mounted, but if the LXD daemon has
+		// been restarted since the DB records were removed then there will be no mount reference counter
+		// showing the volume is in use. If this is the case then call mount the volume to increment the
+		// reference counter.
+		if !vol.MountInUse() {
+			_, err = b.MountInstance(inst, op)
+			if err != nil {
+				return errors.Wrapf(err, "Failed mounting instance")
+			}
+		}
+	} else {
+		// If the instance isn't running then try and unmount it to ensure consistent state after import.
+		_, err = b.UnmountInstance(inst, op)
+		if err != nil {
+			return errors.Wrapf(err, "Failed unmounting instance")
+		}
+	}
+
+	// Create symlink.
+	err = b.ensureInstanceSymlink(inst.Type(), inst.Project(), inst.Name(), vol.MountPath())
+	if err != nil {
+		return err
+	}
+
+	revert.Add(func() {
+		// Remove symlinks.
+		b.removeInstanceSymlink(inst.Type(), inst.Project(), inst.Name())
+		b.removeInstanceSnapshotSymlinkIfUnused(inst.Type(), inst.Project(), inst.Name())
+	})
+
+	// Create snapshot mount paths and snapshot symlink if needed.
+	if len(snapshots) > 0 {
+		for _, snapName := range snapshots {
+			_, snapOnlyName, _ := shared.InstanceGetParentAndSnapshotName(snapName)
+			logger.Debug("Ensuring instance snapshot mount path", log.Ctx{"snapshot": snapOnlyName})
+
+			snapVol, err := vol.NewSnapshot(snapOnlyName)
+			if err != nil {
+				return err
+			}
+
+			err = snapVol.EnsureMountPath()
+			if err != nil {
+				return err
+			}
+		}
+
+		err = b.ensureInstanceSnapshotSymlink(inst.Type(), inst.Project(), inst.Name())
+		if err != nil {
+			return err
+		}
+	}
+
+	revert.Success()
+	return nil
+}
+
 func (b *lxdBackend) BackupCustomVolume(projectName string, volName string, tarWriter *instancewriter.InstanceTarWriter, optimized bool, snapshots bool, op *operations.Operation) error {
 	logger := logging.AddContext(b.logger, log.Ctx{"project": projectName, "volume": volName, "optimized": optimized, "snapshots": snapshots})
 	logger.Debug("BackupCustomVolume started")
