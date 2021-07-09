@@ -230,7 +230,7 @@ func profilesPost(d *Daemon, r *http.Request) response.Response {
 		return response.BadRequest(fmt.Errorf("Invalid profile name %q", req.Name))
 	}
 
-	err = instance.ValidConfig(d.os, req.Config, true, false)
+	err = validateProfileConfig(d, req.Config)
 	if err != nil {
 		return response.BadRequest(err)
 	}
@@ -392,7 +392,6 @@ func profilePut(d *Daemon, r *http.Request) response.Response {
 		return response.SmartError(err)
 	}
 
-	var id int64
 	var profile *api.Profile
 
 	err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
@@ -402,7 +401,6 @@ func profilePut(d *Daemon, r *http.Request) response.Response {
 		}
 
 		profile = db.ProfileToAPI(current)
-		id = int64(current.ID)
 
 		return nil
 	})
@@ -422,7 +420,7 @@ func profilePut(d *Daemon, r *http.Request) response.Response {
 		return response.BadRequest(err)
 	}
 
-	err = doProfileUpdate(d, projectName, name, id, profile, req)
+	err = doProfileUpdate(d, projectName, name, profile, req)
 
 	if err == nil && !isClusterNotification(r) {
 		// Notify all other nodes. If a node is down, it will be ignored.
@@ -487,7 +485,6 @@ func profilePatch(d *Daemon, r *http.Request) response.Response {
 
 	name := mux.Vars(r)["name"]
 
-	var id int64
 	var profile *api.Profile
 
 	err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
@@ -497,7 +494,6 @@ func profilePatch(d *Daemon, r *http.Request) response.Response {
 		}
 
 		profile = db.ProfileToAPI(current)
-		id = int64(current.ID)
 
 		return nil
 	})
@@ -563,7 +559,7 @@ func profilePatch(d *Daemon, r *http.Request) response.Response {
 	requestor := request.CreateRequestor(r)
 	d.State().Events.SendLifecycle(projectName, lifecycle.ProfileUpdated.Event(name, projectName, requestor, nil))
 
-	return response.SmartError(doProfileUpdate(d, projectName, name, id, profile, req))
+	return response.SmartError(doProfileUpdate(d, projectName, name, profile, req))
 }
 
 // swagger:operation POST /1.0/profiles/{name} profiles profile_post

@@ -20,6 +20,13 @@ const (
 	VM = Type(1)
 )
 
+//GetInstanceTypes returns slice of known Instance Types
+func GetInstanceTypes() []Type {
+	return []Type{
+		Any, Container, VM,
+	}
+}
+
 // New validates the supplied string against the allowed types of instance and returns the internal
 // representation of that type. If empty string is supplied then the type returned is TypeContainer.
 // If an invalid name is supplied an error will be returned.

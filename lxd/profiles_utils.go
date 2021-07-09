@@ -14,7 +14,7 @@ import (
 	"github.com/lxc/lxd/shared/api"
 )
 
-func doProfileUpdate(d *Daemon, projectName string, name string, id int64, profile *api.Profile, req api.ProfilePut) error {
+func doProfileUpdate(d *Daemon, projectName string, name string, profile *api.Profile, req api.ProfilePut) error {
 	// Check project limits.
 	err := d.cluster.Transaction(func(tx *db.ClusterTx) error {
 		return project.AllowProfileUpdate(tx, projectName, name, req)
@@ -24,7 +24,7 @@ func doProfileUpdate(d *Daemon, projectName string, name string, id int64, profi
 	}
 
 	// Quick checks.
-	err = instance.ValidConfig(d.os, req.Config, true, false)
+	err = validateProfileConfig(d, req.Config)
 	if err != nil {
 		return err
 	}
@@ -231,4 +231,25 @@ func getProfileInstancesInfo(cluster *db.Cluster, projectName string, profileNam
 	}
 
 	return instances, nil
+}
+
+func validateProfileConfig(d *Daemon, config map[string]string) error {
+	err := instance.ValidConfig(d.os, config, true, instancetype.Any)
+	if err != nil {
+		return err
+	}
+
+	var profileKeyType = instancetype.Any
+	for k := range config {
+		_, t := shared.FindValidatorAndType(k)
+		if profileKeyType != instancetype.Any && t != instancetype.Any && profileKeyType != t {
+			return errors.New("Profiles with mixed instance specific configurations not allowed")
+		}
+
+		if t != instancetype.Any {
+			profileKeyType = t
+		}
+	}
+
+	return nil
 }

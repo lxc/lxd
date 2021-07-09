@@ -126,21 +126,21 @@ func exclusiveConfigKeys(key1 string, key2 string, config map[string]string) (va
 }
 
 // ValidConfig validates an instance's config.
-func ValidConfig(sysOS *sys.OS, config map[string]string, profile bool, expanded bool) error {
+func ValidConfig(sysOS *sys.OS, config map[string]string, expanded bool, instanceType instancetype.Type) error {
 	if config == nil {
 		return nil
 	}
 
 	for k, v := range config {
-		if profile && strings.HasPrefix(k, shared.ConfigVolatilePrefix) {
+		if instanceType == instancetype.Any && strings.HasPrefix(k, shared.ConfigVolatilePrefix) {
 			return fmt.Errorf("Volatile keys can only be set on instances")
 		}
 
-		if profile && strings.HasPrefix(k, "image.") {
+		if instanceType == instancetype.Any && strings.HasPrefix(k, "image.") {
 			return fmt.Errorf("Image keys can only be set on instances")
 		}
 
-		err := validConfigKey(sysOS, k, v)
+		err := validConfigKey(sysOS, k, v, instanceType)
 		if err != nil {
 			return err
 		}
@@ -203,8 +203,8 @@ func ValidConfig(sysOS *sys.OS, config map[string]string, profile bool, expanded
 	return nil
 }
 
-func validConfigKey(os *sys.OS, key string, value string) error {
-	f, err := shared.ConfigKeyChecker(key)
+func validConfigKey(os *sys.OS, key string, value string, instanceType instancetype.Type) error {
+	f, err := shared.ConfigKeyChecker(key, instanceType)
 	if err != nil {
 		return err
 	}
@@ -961,7 +961,7 @@ func CreateInternal(s *state.State, args db.InstanceArgs, revert *revert.Reverte
 	}
 
 	// Validate container config.
-	err = ValidConfig(s.OS, args.Config, false, false)
+	err = ValidConfig(s.OS, args.Config, false, args.Type)
 	if err != nil {
 		return nil, err
 	}

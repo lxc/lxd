@@ -29,14 +29,14 @@ test_basic_usage() {
 
   lxc image alias create foo "${sum}"
   lxc image alias rename foo bar
-  lxc image alias list | grep -qv foo  # the old name is gone
+  lxc image alias list | grep -qv foo # the old name is gone
   lxc image alias delete bar
 
   # Test image list output formats (table & json)
   lxc image list --format table | grep -q testimage
-  lxc image list --format json \
-    | jq '.[]|select(.alias[0].name="testimage")' \
-    | grep -q '"name": "testimage"'
+  lxc image list --format json |
+    jq '.[]|select(.alias[0].name="testimage")' |
+    grep -q '"name": "testimage"'
 
   # Test image delete
   lxc image delete testimage
@@ -63,7 +63,6 @@ test_basic_usage() {
   lxc image export testimage "${LXD_DIR}/foo"
   [ "${sum}" = "$(sha256sum "${LXD_DIR}/foo.tar.xz" | cut -d' ' -f1)" ]
   rm "${LXD_DIR}/foo.tar.xz"
-
 
   # Test image export with a split image.
   deps/import-busybox --split --alias splitimage
@@ -542,4 +541,17 @@ test_basic_usage() {
   # Test renaming/deletion of the default profile
   ! lxc profile rename default foobar || false
   ! lxc profile delete default || false
+
+  # Test profile not allowed to have instance specific config keys of different types
+  lxc profile create instanceTypeTest
+  lxc profile set instanceTypeTest security.privileged true
+  ! lxc profile set instanceTypeTest security.secureboot true || false
+  lxc profile delete instanceTypeTest
+
+  # Test instance type specific config keys
+  lxc init testimage instance-type-specific-config-test-container
+  ! lxc config set instance-type-specific-config-test-container security.secureboot true || false
+  lxc config set instance-type-specific-config-test-container security.nesting true
+  lxc delete instance-type-specific-config-test-container
+
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"github.com/lxc/lxd/lxd/instance/instancetype"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -158,11 +159,15 @@ const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 
 func TestColumns(t *testing.T) {
 	keys := make([]string, 0, len(shared.KnownInstanceConfigKeys))
-	for k := range shared.KnownInstanceConfigKeys {
-		keys = append(keys, k)
-		//Test compatibility with 'config:' prefix
-		keys = append(keys, "config:"+k)
+
+	for _, t := range instancetype.GetInstanceTypes() {
+		for k := range shared.KnownInstanceConfigKeys[t] {
+			keys = append(keys, k)
+			//Test compatibility with 'config:' prefix
+			keys = append(keys, "config:"+k)
+		}
 	}
+
 	//Test with 'devices:'
 	keys = append(keys, "devices:eth0.parent.rand")
 	keys = append(keys, "devices:root.path")

@@ -220,7 +220,7 @@ func qemuCreate(s *state.State, args db.InstanceArgs, revert *revert.Reverter) (
 	}
 
 	// Validate expanded config.
-	err = instance.ValidConfig(s.OS, d.expandedConfig, false, true)
+	err = instance.ValidConfig(s.OS, d.expandedConfig, false, instancetype.VM)
 	if err != nil {
 		return nil, errors.Wrap(err, "Invalid config")
 	}
@@ -3777,7 +3777,7 @@ func (d *qemu) Update(args db.InstanceArgs, userRequested bool) error {
 
 	if userRequested {
 		// Validate the new config.
-		err := instance.ValidConfig(d.state.OS, args.Config, false, false)
+		err := instance.ValidConfig(d.state.OS, args.Config, false, instancetype.VM)
 		if err != nil {
 			return errors.Wrap(err, "Invalid config")
 		}
@@ -3934,7 +3934,7 @@ func (d *qemu) Update(args db.InstanceArgs, userRequested bool) error {
 
 	if userRequested {
 		// Do some validation of the config diff.
-		err = instance.ValidConfig(d.state.OS, d.expandedConfig, false, true)
+		err = instance.ValidConfig(d.state.OS, d.expandedConfig, false, instancetype.VM)
 		if err != nil {
 			return errors.Wrap(err, "Invalid expanded config")
 		}

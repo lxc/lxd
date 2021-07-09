@@ -2,6 +2,7 @@ package shared
 
 import (
 	"fmt"
+	"github.com/lxc/lxd/lxd/instance/instancetype"
 	"regexp"
 	"strconv"
 	"strings"
@@ -76,178 +77,177 @@ var HugePageSizeSuffix = [...]string{"64KB", "1MB", "2MB", "1GB"}
 // KnownInstanceConfigKeys maps all fully defined, well-known config keys
 // to an appropriate checker function, which validates whether or not a
 // given value is syntactically legal.
-var KnownInstanceConfigKeys = map[string]func(value string) error{
-	"boot.autostart":             validate.Optional(validate.IsBool),
-	"boot.autostart.delay":       validate.Optional(validate.IsInt64),
-	"boot.autostart.priority":    validate.Optional(validate.IsInt64),
-	"boot.stop.priority":         validate.Optional(validate.IsInt64),
-	"boot.host_shutdown_timeout": validate.Optional(validate.IsInt64),
+var KnownInstanceConfigKeys = map[instancetype.Type]map[string]func(value string) error{
+	instancetype.Container: {
+		"nvidia.runtime":             validate.Optional(validate.IsBool),
+		"nvidia.driver.capabilities": validate.IsAny,
+		"nvidia.require.cuda":        validate.IsAny,
+		"nvidia.require.driver":      validate.IsAny,
 
-	"limits.cpu": func(value string) error {
-		if value == "" {
-			return nil
-		}
+		"security.nesting":          validate.Optional(validate.IsBool),
+		"security.privileged":       validate.Optional(validate.IsBool),
+		"security.devlxd":           validate.Optional(validate.IsBool),
+		"security.devlxd.images":    validate.Optional(validate.IsBool),
+		"security.protection.shift": validate.Optional(validate.IsBool),
 
-		// Validate the character set
-		match, _ := regexp.MatchString("^[-,0-9]*$", value)
-		if !match {
-			return fmt.Errorf("Invalid CPU limit syntax")
-		}
+		"limits.hugepages.64KB": validate.Optional(validate.IsSize),
+		"limits.hugepages.1MB":  validate.Optional(validate.IsSize),
+		"limits.hugepages.2MB":  validate.Optional(validate.IsSize),
+		"limits.hugepages.1GB":  validate.Optional(validate.IsSize),
+		"limits.memory.enforce": validate.Optional(func(value string) error {
+			return validate.IsOneOf(value, []string{"soft", "hard"})
+		}),
+		"limits.memory.swap":          validate.Optional(validate.IsBool),
+		"limits.memory.swap.priority": validate.Optional(validate.IsPriority),
+		"limits.processes":            validate.Optional(validate.IsInt64),
+		"limits.cpu.priority":         validate.Optional(validate.IsPriority),
+		"limits.cpu.allowance": func(value string) error {
+			if value == "" {
+				return nil
+			}
 
-		// Validate first character
-		if strings.HasPrefix(value, "-") || strings.HasPrefix(value, ",") {
-			return fmt.Errorf("CPU limit can't start with a separator")
-		}
+			if strings.HasSuffix(value, "%") {
+				// Percentage based allocation
+				_, err := strconv.Atoi(strings.TrimSuffix(value, "%"))
+				if err != nil {
+					return err
+				}
 
-		// Validate last character
-		if strings.HasSuffix(value, "-") || strings.HasSuffix(value, ",") {
-			return fmt.Errorf("CPU limit can't end with a separator")
-		}
+				return nil
+			}
 
-		return nil
-	},
-	"limits.cpu.allowance": func(value string) error {
-		if value == "" {
-			return nil
-		}
+			// Time based allocation
+			fields := strings.SplitN(value, "/", 2)
+			if len(fields) != 2 {
+				return fmt.Errorf("Invalid allowance: %s", value)
+			}
 
-		if strings.HasSuffix(value, "%") {
-			// Percentage based allocation
-			_, err := strconv.Atoi(strings.TrimSuffix(value, "%"))
+			_, err := strconv.Atoi(strings.TrimSuffix(fields[0], "ms"))
+			if err != nil {
+				return err
+			}
+
+			_, err = strconv.Atoi(strings.TrimSuffix(fields[1], "ms"))
 			if err != nil {
 				return err
 			}
 
 			return nil
-		}
+		},
 
-		// Time based allocation
-		fields := strings.SplitN(value, "/", 2)
-		if len(fields) != 2 {
-			return fmt.Errorf("Invalid allowance: %s", value)
-		}
+		"linux.kernel_modules": validate.IsAny,
 
-		_, err := strconv.Atoi(strings.TrimSuffix(fields[0], "ms"))
-		if err != nil {
-			return err
-		}
+		"migration.incremental.memory":            validate.Optional(validate.IsBool),
+		"migration.incremental.memory.iterations": validate.Optional(validate.IsUint32),
+		"migration.incremental.memory.goal":       validate.Optional(validate.IsUint32),
+		"migration.stateful":                      validate.Optional(validate.IsBool),
 
-		_, err = strconv.Atoi(strings.TrimSuffix(fields[1], "ms"))
-		if err != nil {
-			return err
-		}
+		"raw.idmap":   validate.IsAny,
+		"raw.lxc":     validate.IsAny,
+		"raw.seccomp": validate.IsAny,
 
-		return nil
+		"security.syscalls.allow":                   validate.IsAny,
+		"security.syscalls.blacklist_default":       validate.Optional(validate.IsBool),
+		"security.syscalls.blacklist_compat":        validate.Optional(validate.IsBool),
+		"security.syscalls.blacklist":               validate.IsAny,
+		"security.syscalls.deny_default":            validate.Optional(validate.IsBool),
+		"security.syscalls.deny_compat":             validate.Optional(validate.IsBool),
+		"security.syscalls.deny":                    validate.IsAny,
+		"security.syscalls.intercept.bpf":           validate.Optional(validate.IsBool),
+		"security.syscalls.intercept.bpf.devices":   validate.Optional(validate.IsBool),
+		"security.syscalls.intercept.mknod":         validate.Optional(validate.IsBool),
+		"security.syscalls.intercept.mount":         validate.Optional(validate.IsBool),
+		"security.syscalls.intercept.mount.allowed": validate.IsAny,
+		"security.syscalls.intercept.mount.fuse":    validate.IsAny,
+		"security.syscalls.intercept.mount.shift":   validate.Optional(validate.IsBool),
+		"security.syscalls.intercept.setxattr":      validate.Optional(validate.IsBool),
+		"security.syscalls.intercept.bpp":           validate.Optional(validate.IsBool),
+		"security.syscalls.whitelist":               validate.IsAny,
 	},
-	"limits.cpu.priority": validate.Optional(validate.IsPriority),
+	instancetype.VM: {
+		"limits.memory.hugepages": validate.Optional(validate.IsBool),
+		"security.secureboot":     validate.Optional(validate.IsBool),
+		"raw.qemu":                validate.IsAny,
+	},
+	instancetype.Any: {
+		"security.protection.delete": validate.Optional(validate.IsBool),
+		"security.idmap.base":        validate.Optional(validate.IsUint32),
+		"security.idmap.isolated":    validate.Optional(validate.IsBool),
+		"security.idmap.size":        validate.Optional(validate.IsUint32),
 
-	"limits.disk.priority": validate.Optional(validate.IsPriority),
+		"snapshots.schedule":         validate.Optional(validate.IsCron([]string{"@hourly", "@daily", "@midnight", "@weekly", "@monthly", "@annually", "@yearly", "@startup"})),
+		"snapshots.schedule.stopped": validate.Optional(validate.IsBool),
+		"snapshots.pattern":          validate.IsAny,
+		"snapshots.expiry": func(value string) error {
+			// Validate expression
+			_, err := GetSnapshotExpiry(time.Time{}, value)
+			return err
+		},
 
-	"limits.hugepages.64KB": validate.Optional(validate.IsSize),
-	"limits.hugepages.1MB":  validate.Optional(validate.IsSize),
-	"limits.hugepages.2MB":  validate.Optional(validate.IsSize),
-	"limits.hugepages.1GB":  validate.Optional(validate.IsSize),
+		"raw.apparmor": validate.IsAny,
 
-	"limits.memory": func(value string) error {
-		if value == "" {
-			return nil
-		}
+		"limits.network.priority": validate.Optional(validate.IsPriority),
+		"limits.memory": func(value string) error {
+			if value == "" {
+				return nil
+			}
 
-		if strings.HasSuffix(value, "%") {
-			_, err := strconv.ParseInt(strings.TrimSuffix(value, "%"), 10, 64)
+			if strings.HasSuffix(value, "%") {
+				_, err := strconv.ParseInt(strings.TrimSuffix(value, "%"), 10, 64)
+				if err != nil {
+					return err
+				}
+
+				return nil
+			}
+
+			_, err := units.ParseByteSizeString(value)
 			if err != nil {
 				return err
 			}
 
 			return nil
-		}
+		},
+		"limits.cpu": func(value string) error {
+			if value == "" {
+				return nil
+			}
 
-		_, err := units.ParseByteSizeString(value)
-		if err != nil {
-			return err
-		}
+			// Validate the character set
+			match, _ := regexp.MatchString("^[-,0-9]*$", value)
+			if !match {
+				return fmt.Errorf("Invalid CPU limit syntax")
+			}
 
-		return nil
+			// Validate first character
+			if strings.HasPrefix(value, "-") || strings.HasPrefix(value, ",") {
+				return fmt.Errorf("CPU limit can't start with a separator")
+			}
+
+			// Validate last character
+			if strings.HasSuffix(value, "-") || strings.HasSuffix(value, ",") {
+				return fmt.Errorf("CPU limit can't end with a separator")
+			}
+
+			return nil
+		},
+		"limits.disk.priority":       validate.Optional(validate.IsPriority),
+		"boot.autostart":             validate.Optional(validate.IsBool),
+		"boot.autostart.delay":       validate.Optional(validate.IsInt64),
+		"boot.autostart.priority":    validate.Optional(validate.IsInt64),
+		"boot.stop.priority":         validate.Optional(validate.IsInt64),
+		"boot.host_shutdown_timeout": validate.Optional(validate.IsInt64),
+
+		"volatile.apply_template":   validate.IsAny,
+		"volatile.base_image":       validate.IsAny,
+		"volatile.last_state.idmap": validate.IsAny,
+		"volatile.last_state.power": validate.IsAny,
+		"volatile.idmap.base":       validate.IsAny,
+		"volatile.idmap.current":    validate.IsAny,
+		"volatile.idmap.next":       validate.IsAny,
+		"volatile.apply_quota":      validate.IsAny,
+		"volatile.uuid":             validate.Optional(validate.IsUUID),
 	},
-	"limits.memory.enforce": validate.Optional(func(value string) error {
-		return validate.IsOneOf(value, []string{"soft", "hard"})
-	}),
-	"limits.memory.swap":          validate.Optional(validate.IsBool),
-	"limits.memory.swap.priority": validate.Optional(validate.IsPriority),
-	"limits.memory.hugepages":     validate.Optional(validate.IsBool),
-
-	"limits.network.priority": validate.Optional(validate.IsPriority),
-
-	"limits.processes": validate.Optional(validate.IsInt64),
-
-	"linux.kernel_modules": validate.IsAny,
-
-	"migration.incremental.memory":            validate.Optional(validate.IsBool),
-	"migration.incremental.memory.iterations": validate.Optional(validate.IsUint32),
-	"migration.incremental.memory.goal":       validate.Optional(validate.IsUint32),
-	"migration.stateful":                      validate.Optional(validate.IsBool),
-
-	"nvidia.runtime":             validate.Optional(validate.IsBool),
-	"nvidia.driver.capabilities": validate.IsAny,
-	"nvidia.require.cuda":        validate.IsAny,
-	"nvidia.require.driver":      validate.IsAny,
-
-	"security.nesting":       validate.Optional(validate.IsBool),
-	"security.privileged":    validate.Optional(validate.IsBool),
-	"security.devlxd":        validate.Optional(validate.IsBool),
-	"security.devlxd.images": validate.Optional(validate.IsBool),
-
-	"security.protection.delete": validate.Optional(validate.IsBool),
-	"security.protection.shift":  validate.Optional(validate.IsBool),
-
-	"security.idmap.base":     validate.Optional(validate.IsUint32),
-	"security.idmap.isolated": validate.Optional(validate.IsBool),
-	"security.idmap.size":     validate.Optional(validate.IsUint32),
-
-	"security.secureboot": validate.Optional(validate.IsBool),
-
-	"security.syscalls.allow":                   validate.IsAny,
-	"security.syscalls.blacklist_default":       validate.Optional(validate.IsBool),
-	"security.syscalls.blacklist_compat":        validate.Optional(validate.IsBool),
-	"security.syscalls.blacklist":               validate.IsAny,
-	"security.syscalls.deny_default":            validate.Optional(validate.IsBool),
-	"security.syscalls.deny_compat":             validate.Optional(validate.IsBool),
-	"security.syscalls.deny":                    validate.IsAny,
-	"security.syscalls.intercept.bpf":           validate.Optional(validate.IsBool),
-	"security.syscalls.intercept.bpf.devices":   validate.Optional(validate.IsBool),
-	"security.syscalls.intercept.mknod":         validate.Optional(validate.IsBool),
-	"security.syscalls.intercept.mount":         validate.Optional(validate.IsBool),
-	"security.syscalls.intercept.mount.allowed": validate.IsAny,
-	"security.syscalls.intercept.mount.fuse":    validate.IsAny,
-	"security.syscalls.intercept.mount.shift":   validate.Optional(validate.IsBool),
-	"security.syscalls.intercept.setxattr":      validate.Optional(validate.IsBool),
-	"security.syscalls.whitelist":               validate.IsAny,
-
-	"snapshots.schedule":         validate.Optional(validate.IsCron([]string{"@hourly", "@daily", "@midnight", "@weekly", "@monthly", "@annually", "@yearly", "@startup"})),
-	"snapshots.schedule.stopped": validate.Optional(validate.IsBool),
-	"snapshots.pattern":          validate.IsAny,
-	"snapshots.expiry": func(value string) error {
-		// Validate expression
-		_, err := GetSnapshotExpiry(time.Time{}, value)
-		return err
-	},
-
-	// Caller is responsible for full validation of any raw.* value
-	"raw.apparmor": validate.IsAny,
-	"raw.idmap":    validate.IsAny,
-	"raw.lxc":      validate.IsAny,
-	"raw.qemu":     validate.IsAny,
-	"raw.seccomp":  validate.IsAny,
-
-	"volatile.apply_template":   validate.IsAny,
-	"volatile.base_image":       validate.IsAny,
-	"volatile.last_state.idmap": validate.IsAny,
-	"volatile.last_state.power": validate.IsAny,
-	"volatile.idmap.base":       validate.IsAny,
-	"volatile.idmap.current":    validate.IsAny,
-	"volatile.idmap.next":       validate.IsAny,
-	"volatile.apply_quota":      validate.IsAny,
-	"volatile.uuid":             validate.Optional(validate.IsUUID),
 }
 
 // ConfigKeyChecker returns a function that will check whether or not
@@ -256,11 +256,7 @@ var KnownInstanceConfigKeys = map[string]func(value string) error{
 // syntactic checking of the value, semantic and usage checking must
 // be done by the caller.  User defined keys are always considered to
 // be valid, e.g. user.* and environment.* keys.
-func ConfigKeyChecker(key string) (func(value string) error, error) {
-	if f, ok := KnownInstanceConfigKeys[key]; ok {
-		return f, nil
-	}
-
+func ConfigKeyChecker(key string, instanceType instancetype.Type) (func(value string) error, error) {
 	if strings.HasPrefix(key, ConfigVolatilePrefix) {
 		if strings.HasSuffix(key, ".hwaddr") {
 			return validate.IsAny, nil
@@ -328,7 +324,29 @@ func ConfigKeyChecker(key string) (func(value string) error, error) {
 		return validate.IsAny, nil
 	}
 
-	return nil, fmt.Errorf("Unknown configuration key: %s", key)
+	f, keyType := FindValidatorAndType(key)
+
+	if f == nil {
+		return nil, fmt.Errorf("Unknown configuration key: %s", key)
+	}
+
+	if instanceType == instancetype.Any || keyType == instancetype.Any || keyType == instanceType {
+		return f, nil
+	}
+
+	return nil, fmt.Errorf("Config key %q is not allowed for instance type %s", key, instanceType)
+}
+
+// FindValidatorAndType finds config key and type of config key
+func FindValidatorAndType(key string) (func(value string) error, instancetype.Type) {
+	for _, t := range instancetype.GetInstanceTypes() {
+		f := KnownInstanceConfigKeys[t][key]
+		if f != nil {
+			return f, t
+		}
+	}
+
+	return nil, instancetype.Any
 }
 
 // InstanceGetParentAndSnapshotName returns the parent instance name, snapshot name,
