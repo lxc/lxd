@@ -141,6 +141,11 @@ func (d *mock) GetVolumeDiskPath(vol Volume) (string, error) {
 	return "", nil
 }
 
+// ListVolumes returns a list of LXD volumes in storage pool.
+func (d *mock) ListVolumes() ([]Volume, error) {
+	return nil, nil
+}
+
 // MountVolume simulates mounting a volume.
 func (d *mock) MountVolume(vol Volume, op *operations.Operation) error {
 	return nil
