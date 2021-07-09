@@ -486,6 +486,90 @@ func (d *lvm) GetVolumeDiskPath(vol Volume) (string, error) {
 	return "", ErrNotSupported
 }
 
+// ListVolumes returns a list of LXD volumes in storage pool.
+func (d *lvm) ListVolumes() ([]Volume, error) {
+	var vols []Volume
+
+	cmd := exec.Command("lvs", "--noheadings", "-o", "lv_name", d.config["lvm.vg_name"])
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, err
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		lvName := strings.TrimSpace(scanner.Text())
+		var volType VolumeType
+
+		for lvmVolumeType, lvmVolumeTypePrefix := range lvmVolumeTypePrefixes {
+			if strings.HasPrefix(lvName, fmt.Sprintf("%s_", lvmVolumeTypePrefix)) {
+				volType = lvmVolumeType
+			}
+		}
+
+		if volType == "" {
+			d.logger.Debug("Ignoring unrecognised volume type", log.Ctx{"lvName": lvName})
+			continue // Ignore unrecognised volume.
+		}
+
+		parts := strings.SplitN(lvName, "_", 2)
+		if len(parts) < 2 {
+			d.logger.Debug("Ignoring unrecognised volume", log.Ctx{"lvName": lvName})
+			continue // Ignore unrecognised volume.
+		}
+
+		volName := parts[1]
+
+		lvSnapSepCount := strings.Count(volName, lvmSnapshotSeparator)
+		if lvSnapSepCount%2 != 0 {
+			// If snapshot separator count is odd, then this means we have a lone lvmSnapshotSeparator
+			// that is not part of the lvmEscapedHyphen pair, which means this volume is a snapshot.
+			d.logger.Debug("Ignoring snapshot volume", log.Ctx{"lvName": lvName})
+			continue // Ignore snapshot volumes.
+		}
+
+		isBlock := strings.HasSuffix(volName, lvmBlockVolSuffix)
+
+		if volType == VolumeTypeVM && !isBlock {
+			continue // Ignore VM filesystem volumes as we will just return the VM's block volume.
+		}
+
+		// Unescape raw LVM name to LXD storage volume name. Safe to do now we know we are not dealing
+		// with snapshot volumes.
+		volName = strings.Replace(volName, lvmEscapedHyphen, "-", -1)
+
+		contentType := ContentTypeFS
+		if volType == VolumeTypeVM || isBlock {
+			contentType = ContentTypeBlock
+			volName = strings.TrimSuffix(volName, lvmBlockVolSuffix)
+		}
+
+		vols = append(vols, NewVolume(d, d.name, volType, contentType, volName, nil, d.config))
+	}
+
+	errMsg, err := ioutil.ReadAll(stderr)
+	if err != nil {
+		return nil, err
+	}
+
+	err = cmd.Wait()
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to get volume list: %v", strings.TrimSpace(string(errMsg)))
+	}
+
+	return vols, nil
+}
+
 // MountVolume mounts a volume and increments ref counter. Please call UnmountVolume() when done with the volume.
 func (d *lvm) MountVolume(vol Volume, op *operations.Operation) error {
 	unlock := vol.MountLock()
