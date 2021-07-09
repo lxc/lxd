@@ -785,6 +785,11 @@ func (d *btrfs) GetVolumeDiskPath(vol Volume) (string, error) {
 	return genericVFSGetVolumeDiskPath(vol)
 }
 
+// ListVolumes returns a list of LXD volumes in storage pool.
+func (d *btrfs) ListVolumes() ([]Volume, error) {
+	return nil, ErrNotImplemented
+}
+
 // MountVolume simulates mounting a volume.
 func (d *btrfs) MountVolume(vol Volume, op *operations.Operation) error {
 	unlock := vol.MountLock()
