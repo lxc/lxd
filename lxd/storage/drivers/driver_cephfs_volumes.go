@@ -343,6 +343,11 @@ func (d *cephfs) GetVolumeDiskPath(vol Volume) (string, error) {
 	return "", ErrNotSupported
 }
 
+// ListVolumes returns a list of LXD volumes in storage pool.
+func (d *cephfs) ListVolumes() ([]Volume, error) {
+	return nil, ErrNotImplemented
+}
+
 // MountVolume sets up the volume for use.
 func (d *cephfs) MountVolume(vol Volume, op *operations.Operation) error {
 	unlock := vol.MountLock()
