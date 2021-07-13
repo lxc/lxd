@@ -1400,3 +1400,6 @@ This adds supported storage driver info to server environment info.
 
 ## event\_lifecycle\_requestor\_address
 Adds a new address field to lifecycle requestor.
+
+## custom\_volume\_refresh
+Adds support for refresh during volume migration.
