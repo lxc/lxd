@@ -4759,6 +4759,11 @@ definitions:
         example: foo
         type: string
         x-go-name: Project
+      refresh:
+        description: Whether existing destination volume should be refreshed
+        example: false
+        type: boolean
+        x-go-name: Refresh
       secrets:
         additionalProperties:
           type: string
