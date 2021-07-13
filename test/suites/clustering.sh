@@ -2506,6 +2506,11 @@ test_clustering_image_refresh() {
   # shellcheck disable=SC2046
   LXD_DIR="${LXD_REMOTE_DIR}" lxc rm $(LXD_DIR="${LXD_REMOTE_DIR}" lxc ls --format csv | cut -d, -f1)
 
+  LXD_DIR="${LXD_ONE_DIR}" lxc project delete foo
+  LXD_DIR="${LXD_ONE_DIR}" lxc project delete bar
+  printf 'config: {}\ndevices: {}' | LXD_DIR="${LXD_ONE_DIR}" lxc profile edit default
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage delete data
+
   LXD_DIR="${LXD_ONE_DIR}" lxd shutdown
   LXD_DIR="${LXD_TWO_DIR}" lxd shutdown
   LXD_DIR="${LXD_THREE_DIR}" lxd shutdown
@@ -2651,6 +2656,18 @@ test_clustering_evacuation() {
   LXD_DIR="${LXD_TWO_DIR}" lxc info c5 | grep -q "Location: node1"
   LXD_DIR="${LXD_TWO_DIR}" lxc info c6 | grep -q "Status: Running"
   LXD_DIR="${LXD_TWO_DIR}" lxc info c6 | grep -q "Location: node2"
+
+  # Clean up
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c1
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c2
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c3
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c4
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c5
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c6
+  LXD_DIR="${LXD_TWO_DIR}" lxc image rm testimage
+
+  printf 'config: {}\ndevices: {}' | LXD_DIR="${LXD_ONE_DIR}" lxc profile edit default
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage delete data
 
   # Shut down cluster
   LXD_DIR="${LXD_ONE_DIR}" lxd shutdown
