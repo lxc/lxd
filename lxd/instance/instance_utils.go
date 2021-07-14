@@ -1175,3 +1175,68 @@ func NextSnapshotName(s *state.State, inst Instance, defaultPattern string) (str
 
 	return pattern, nil
 }
+
+// GetMigratableInstances returns a list of instances which can be migrated.
+func GetMigratableInstances(cluster *db.Cluster, instances []Instance) []Instance {
+	ret := make([]Instance, 0)
+
+	// Check if all migrations can be performed. If not, fail here.
+	for _, inst := range instances {
+		config := inst.ExpandedConfig()
+
+		val, ok := config["cluster.evacuate"]
+		if !ok {
+			val = "auto"
+		}
+
+		if val == "migrate" {
+			ret = append(ret, inst)
+		}
+
+		if val == "stop" {
+			continue
+		}
+
+		devices := inst.ExpandedDevices()
+
+		canMigrate := true
+
+		for _, dev := range devices {
+			switch dev["type"] {
+			case "disk":
+				// check pool
+				poolID, err := cluster.GetStoragePoolID(dev["pool"])
+				if err != nil {
+					canMigrate = false
+					break
+				}
+
+				isRemote, err := cluster.IsRemoteStorage(poolID)
+				if err != nil {
+					canMigrate = false
+					break
+				}
+
+				if !isRemote {
+					canMigrate = false
+					break
+				}
+			case "unix-char", "unix-block", "usb", "gpu":
+				canMigrate = false
+				break
+			}
+
+			if !canMigrate {
+				break
+			}
+		}
+
+		if !canMigrate {
+			continue
+		}
+
+		ret = append(ret, inst)
+	}
+
+	return ret
+}
