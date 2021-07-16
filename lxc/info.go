@@ -586,7 +586,7 @@ func (c *cmdInfo) instanceInfo(d lxd.InstanceServer, remote config.Remote, name 
 	for _, snap := range snaps {
 		if firstSnapshot {
 			fmt.Println(i18n.G("Snapshots:"))
-			columnNames := []string {"Name", i18n.G("Taken at"), i18n.G("Expires at"), "Stateful"}
+			columnNames := []string {i18n.G("Name"), i18n.G("Taken at"), i18n.G("Expires at"), i18n.G("Stateful")}
 			_, _ = fmt.Fprintln(w, strings.Join(columnNames[:], "\t"))
 		}
 
@@ -627,7 +627,7 @@ func (c *cmdInfo) instanceInfo(d lxd.InstanceServer, remote config.Remote, name 
 	for _, backup := range backups {
 		if firstBackup {
 			fmt.Println(i18n.G("Backups:"))
-			columnNames := []string {"Name", i18n.G("Taken at"), i18n.G("Expires at"), "Instance Only", "Optimized Storage"}
+			columnNames := []string {i18n.G("Name"), i18n.G("Taken at"), i18n.G("Expires at"), i18n.G("Instance Only"), i18n.G("Optimized Storage")}
 			_, _ = fmt.Fprintln(w, strings.Join(columnNames[:], "\t"))
 		}
 
