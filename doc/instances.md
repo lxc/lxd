@@ -41,6 +41,7 @@ boot.autostart.delay                        | integer   | 0                 | n/
 boot.autostart.priority                     | integer   | 0                 | n/a           | -                         | What order to start the instances in (starting with highest)
 boot.host\_shutdown\_timeout                | integer   | 30                | yes           | -                         | Seconds to wait for instance to shutdown before it is force stopped
 boot.stop.priority                          | integer   | 0                 | n/a           | -                         | What order to shutdown the instances (starting with highest)
+cluster.evacuate                            | string    | auto              | n/a           | -                         | What to do when evacuating the instance (auto, migrate, or stop)
 environment.\*                              | string    | -                 | yes (exec)    | -                         | key/value environment variables to export to the instance and set on exec
 limits.cpu                                  | string    | - (all)           | yes           | -                         | Number or range of CPUs to expose to the instance
 limits.cpu.allowance                        | string    | 100%              | yes           | container                 | How much of the CPU can be used. Can be a percentage (e.g. 50%) for a soft limit or hard a chunk of time (25ms/100ms)
@@ -106,6 +107,7 @@ Key                                         | Type      | Default       | Descri
 :--                                         | :---      | :------       | :----------
 volatile.apply\_template                    | string    | -             | The name of a template hook which should be triggered upon next startup
 volatile.base\_image                        | string    | -             | The hash of the image the instance was created from, if any
+volatile.evacuate.origin                    | string    | -             | The origin (cluster member) of the evacuated instance
 volatile.idmap.base                         | integer   | -             | The first id in the instance's primary idmap range
 volatile.idmap.current                      | string    | -             | The idmap currently in use by the instance
 volatile.idmap.next                         | string    | -             | The idmap to use next time the instance starts
