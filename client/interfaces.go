@@ -444,6 +444,9 @@ type StoragePoolVolumeCopyArgs struct {
 
 	// API extension: storage_api_volume_snapshots
 	VolumeOnly bool
+
+	// API extension: custom_volume_refresh
+	Refresh bool
 }
 
 // The StoragePoolVolumeMoveArgs struct is used to pass additional options

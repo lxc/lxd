@@ -155,13 +155,23 @@ test_storage_local_volume_handling() {
           lxc storage volume show "lxdtest-$(basename "${LXD_DIR}")-${target_driver}" vol4 | grep -q 'content_type: block'
           lxc storage volume show "lxdtest-$(basename "${LXD_DIR}")-${target_driver}" vol4/snap0 | grep -q 'content_type: block'
 
+          # create volumes
+          lxc storage volume create "lxdtest-$(basename "${LXD_DIR}")-${source_driver}" vol5 --type=block size=4194304
+          lxc storage volume create "lxdtest-$(basename "${LXD_DIR}")-${source_driver}" vol6 --type=block size=4194304
+          # copy to empty volume destination with refresh flag
+          lxc storage volume copy --refresh "lxdtest-$(basename "${LXD_DIR}")-${source_driver}/vol5" "lxdtest-$(basename "${LXD_DIR}")-${target_driver}/vol5"
+          # incremental copy to existing volume destination with refresh flag
+          lxc storage volume copy --refresh "lxdtest-$(basename "${LXD_DIR}")-${source_driver}/vol6" "lxdtest-$(basename "${LXD_DIR}")-${target_driver}/vol5"
+
           # clean up
           lxc storage volume delete "lxdtest-$(basename "${LXD_DIR}")-${source_driver}" vol1
           lxc storage volume delete "lxdtest-$(basename "${LXD_DIR}")-${target_driver}" vol1
           lxc storage volume delete "lxdtest-$(basename "${LXD_DIR}")-${target_driver}" vol2
           lxc storage volume delete "lxdtest-$(basename "${LXD_DIR}")-${target_driver}" vol3
           lxc storage volume delete "lxdtest-$(basename "${LXD_DIR}")-${target_driver}" vol4
-
+          lxc storage volume delete "lxdtest-$(basename "${LXD_DIR}")-${source_driver}" vol5
+          lxc storage volume delete "lxdtest-$(basename "${LXD_DIR}")-${target_driver}" vol5
+          lxc storage volume delete "lxdtest-$(basename "${LXD_DIR}")-${source_driver}" vol6
         fi
       done
     done
