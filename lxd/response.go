@@ -8,17 +8,10 @@ import (
 	"github.com/lxc/lxd/lxd/response"
 )
 
-// forwardedResponseIfTargetIsRemote redirects a request to the request has a
-// targetNode parameter pointing to a node which is not the local one.
-func forwardedResponseIfTargetIsRemote(d *Daemon, r *http.Request) response.Response {
-	targetNode := queryParam(r, "target")
-	if targetNode == "" {
-		return nil
-	}
-
+func forwardedResponseToNode(d *Daemon, r *http.Request, node string) response.Response {
 	// Figure out the address of the target node (which is possibly
 	// this very same node).
-	address, err := cluster.ResolveTarget(d.cluster, targetNode)
+	address, err := cluster.ResolveTarget(d.cluster, node)
 	if err != nil {
 		return response.SmartError(err)
 	}
@@ -33,6 +26,17 @@ func forwardedResponseIfTargetIsRemote(d *Daemon, r *http.Request) response.Resp
 	}
 
 	return nil
+}
+
+// forwardedResponseIfTargetIsRemote redirects a request to the request has a
+// targetNode parameter pointing to a node which is not the local one.
+func forwardedResponseIfTargetIsRemote(d *Daemon, r *http.Request) response.Response {
+	targetNode := queryParam(r, "target")
+	if targetNode == "" {
+		return nil
+	}
+
+	return forwardedResponseToNode(d, r, targetNode)
 }
 
 // forwardedResponseIfInstanceIsRemote redirects a request to the node running

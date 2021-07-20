@@ -63,6 +63,8 @@ const (
 	OperationWarningsPruneResolved
 	OperationClusterJoinToken
 	OperationVolumeSnapshotRename
+	OperationClusterMemberEvacuate
+	OperationClusterMemberRestore
 )
 
 // Description return a human-readable description of the operation type.
@@ -172,6 +174,10 @@ func (t OperationType) Description() string {
 		return "Restoring custom volume backup"
 	case OperationWarningsPruneResolved:
 		return "Pruning resolved warnings"
+	case OperationClusterMemberEvacuate:
+		return "Evacuating cluster member"
+	case OperationClusterMemberRestore:
+		return "Restoring cluster member"
 	default:
 		return "Executing operation"
 	}

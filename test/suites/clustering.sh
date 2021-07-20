@@ -2514,6 +2514,11 @@ test_clustering_image_refresh() {
   # shellcheck disable=SC2046
   LXD_DIR="${LXD_REMOTE_DIR}" lxc rm $(LXD_DIR="${LXD_REMOTE_DIR}" lxc ls --format csv | cut -d, -f1)
 
+  LXD_DIR="${LXD_ONE_DIR}" lxc project delete foo
+  LXD_DIR="${LXD_ONE_DIR}" lxc project delete bar
+  printf 'config: {}\ndevices: {}' | LXD_DIR="${LXD_ONE_DIR}" lxc profile edit default
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage delete data
+
   LXD_DIR="${LXD_ONE_DIR}" lxd shutdown
   LXD_DIR="${LXD_TWO_DIR}" lxd shutdown
   LXD_DIR="${LXD_THREE_DIR}" lxd shutdown
@@ -2531,6 +2536,162 @@ test_clustering_image_refresh() {
   kill_lxd "${LXD_TWO_DIR}"
   kill_lxd "${LXD_THREE_DIR}"
   kill_lxd "${LXD_REMOTE_DIR}"
+
+  # shellcheck disable=SC2034
+  LXD_NETNS=
+}
+
+test_clustering_evacuation() {
+  # shellcheck disable=2039
+  local LXD_DIR
+
+  setup_clustering_bridge
+  prefix="lxd$$"
+  bridge="${prefix}"
+
+  # The random storage backend is not supported in clustering tests,
+  # since we need to have the same storage driver on all nodes.
+  driver="${LXD_BACKEND}"
+  if [ "${driver}" = "random" ] || [ "${driver}" = "lvm" ]; then
+    driver="dir"
+  fi
+
+  # Spawn first node
+  setup_clustering_netns 1
+  LXD_ONE_DIR=$(mktemp -d -p "${TEST_DIR}" XXX)
+  chmod +x "${LXD_ONE_DIR}"
+  ns1="${prefix}1"
+  spawn_lxd_and_bootstrap_cluster "${ns1}" "${bridge}" "${LXD_ONE_DIR}" "${driver}"
+
+  # The state of the preseeded storage pool shows up as CREATED
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage list | grep data | grep -q CREATED
+
+  # Add a newline at the end of each line. YAML as weird rules..
+  cert=$(sed ':a;N;$!ba;s/\n/\n\n/g' "${LXD_ONE_DIR}/cluster.crt")
+
+  # Spawn a second node
+  setup_clustering_netns 2
+  LXD_TWO_DIR=$(mktemp -d -p "${TEST_DIR}" XXX)
+  chmod +x "${LXD_TWO_DIR}"
+  ns2="${prefix}2"
+  spawn_lxd_and_join_cluster "${ns2}" "${bridge}" "${cert}" 2 1 "${LXD_TWO_DIR}" "${driver}"
+
+  # Spawn a third node
+  setup_clustering_netns 3
+  LXD_THREE_DIR=$(mktemp -d -p "${TEST_DIR}" XXX)
+  chmod +x "${LXD_THREE_DIR}"
+  ns3="${prefix}3"
+  spawn_lxd_and_join_cluster "${ns3}" "${bridge}" "${cert}" 3 1 "${LXD_THREE_DIR}" "${driver}"
+
+  # Create local pool
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage create pool1 dir --target node1
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage create pool1 dir --target node2
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage create pool1 dir --target node3
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage create pool1 dir
+
+  # Create local storage volume
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage volume create pool1 vol1
+
+  LXD_DIR="${LXD_ONE_DIR}" ensure_import_testimage
+
+  LXD_DIR="${LXD_ONE_DIR}" lxc launch testimage c1 --target=node1
+  LXD_DIR="${LXD_ONE_DIR}" lxc launch testimage c2 --target=node1 -c cluster.evacuate=auto -s pool1
+  LXD_DIR="${LXD_ONE_DIR}" lxc launch testimage c3 --target=node1 -c cluster.evacuate=stop
+  LXD_DIR="${LXD_ONE_DIR}" lxc launch testimage c4 --target=node1 -c cluster.evacuate=migrate -s pool1
+  LXD_DIR="${LXD_ONE_DIR}" lxc init testimage c5 --target=node1
+  LXD_DIR="${LXD_ONE_DIR}" lxc launch testimage c6 --target=node2
+
+  # For debugging
+  LXD_DIR="${LXD_TWO_DIR}" lxc list
+
+  # Evacuate first node
+  LXD_DIR="${LXD_TWO_DIR}" lxc cluster evacuate node1 --force
+
+  # Ensure the node is evacuated
+  LXD_DIR="${LXD_TWO_DIR}" lxc cluster show node1 | grep -q "status: Evacuated"
+
+  # For debugging
+  LXD_DIR="${LXD_TWO_DIR}" lxc list
+
+  # Check instance status
+  if [ "${driver}" = "ceph" ]; then
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c1 | grep -q "Status: Running"
+    ! LXD_DIR="${LXD_TWO_DIR}" lxc info c1 | grep -q "Location: node1" || false
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c2 | grep -q "Status: Stopped"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c2 | grep -q "Location: node1"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c3 | grep -q "Status: Stopped"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c3 | grep -q "Location: node1"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c4 | grep -q "Status: Running"
+    ! LXD_DIR="${LXD_TWO_DIR}" lxc info c4 | grep -q "Location: node1" || false
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c5 | grep -q "Status: Running"
+    ! LXD_DIR="${LXD_TWO_DIR}" lxc info c5 | grep -q "Location: node1" || false
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c6 | grep -q "Status: Running"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c6 | grep -q "Location: node2"
+  else
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c1 | grep -q "Status: Stopped"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c1 | grep -q "Location: node1"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c2 | grep -q "Status: Stopped"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c2 | grep -q "Location: node1"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c3 | grep -q "Status: Stopped"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c3 | grep -q "Location: node1"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c4 | grep -q "Status: Running"
+    ! LXD_DIR="${LXD_TWO_DIR}" lxc info c4 | grep -q "Location: node1" || false
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c5 | grep -q "Status: Stopped"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c5 | grep -q "Location: node1"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c6 | grep -q "Status: Running"
+    LXD_DIR="${LXD_TWO_DIR}" lxc info c6 | grep -q "Location: node2"
+  fi
+
+  # Ensure instances cannot be created on the evacuated node
+  ! LXD_DIR="${LXD_TWO_DIR}" lxc launch testimage c7 --target=node1 || false
+
+  # Restore first node
+  LXD_DIR="${LXD_TWO_DIR}" lxc cluster restore node1 --force
+
+  # For debugging
+  LXD_DIR="${LXD_TWO_DIR}" lxc list
+
+  # Ensure the instances were moved back to the origin
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c1 | grep -q "Status: Running"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c1 | grep -q "Location: node1"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c2 | grep -q "Status: Running"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c2 | grep -q "Location: node1"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c3 | grep -q "Status: Running"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c3 | grep -q "Location: node1"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c4 | grep -q "Status: Running"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c4 | grep -q "Location: node1"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c5 | grep -q "Status: Stopped"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c5 | grep -q "Location: node1"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c6 | grep -q "Status: Running"
+  LXD_DIR="${LXD_TWO_DIR}" lxc info c6 | grep -q "Location: node2"
+
+  # Clean up
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c1
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c2
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c3
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c4
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c5
+  LXD_DIR="${LXD_TWO_DIR}" lxc rm -f c6
+  LXD_DIR="${LXD_TWO_DIR}" lxc image rm testimage
+
+  printf 'config: {}\ndevices: {}' | LXD_DIR="${LXD_ONE_DIR}" lxc profile edit default
+  LXD_DIR="${LXD_ONE_DIR}" lxc storage delete data
+
+  # Shut down cluster
+  LXD_DIR="${LXD_ONE_DIR}" lxd shutdown
+  LXD_DIR="${LXD_TWO_DIR}" lxd shutdown
+  LXD_DIR="${LXD_THREE_DIR}" lxd shutdown
+  sleep 0.5
+  rm -f "${LXD_ONE_DIR}/unix.socket"
+  rm -f "${LXD_TWO_DIR}/unix.socket"
+  rm -f "${LXD_THREE_DIR}/unix.socket"
+
+  teardown_clustering_netns
+  teardown_clustering_bridge
+
+  kill_lxd "${LXD_ONE_DIR}"
+  kill_lxd "${LXD_TWO_DIR}"
+  kill_lxd "${LXD_THREE_DIR}"
 
   # shellcheck disable=SC2034
   LXD_NETNS=

@@ -301,6 +301,18 @@ definitions:
         x-go-name: Roles
     type: object
     x-go-package: github.com/lxc/lxd/shared/api
+  ClusterMemberStatePost:
+    properties:
+      action:
+        description: The action to be performed. Valid actions are "evacuate" and
+          "restore".
+        example: evacuate
+        type: string
+        x-go-name: Action
+    title: ClusterMemberStatePost represents the fields required to evacuate a cluster
+      member.
+    type: object
+    x-go-package: github.com/lxc/lxd/shared/api
   ClusterMembersPost:
     properties:
       server_name:
@@ -5620,6 +5632,33 @@ paths:
         "500":
           $ref: '#/responses/InternalServerError'
       summary: Update the cluster member
+      tags:
+      - cluster
+  /1.0/cluster/members/{name}/state:
+    post:
+      consumes:
+      - application/json
+      description: Evacuates or restores a cluster member.
+      operationId: cluster_member_state_post
+      parameters:
+      - description: Cluster member state
+        in: body
+        name: cluster
+        required: true
+        schema:
+          $ref: '#/definitions/ClusterMemberStatePost'
+      produces:
+      - application/json
+      responses:
+        "200":
+          $ref: '#/responses/Operation'
+        "400":
+          $ref: '#/responses/BadRequest'
+        "403":
+          $ref: '#/responses/Forbidden'
+        "500":
+          $ref: '#/responses/InternalServerError'
+      summary: Evacuate or restore a cluster member
       tags:
       - cluster
   /1.0/cluster/members?recursion=1:

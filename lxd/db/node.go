@@ -39,8 +39,9 @@ var ClusterRoles = map[int]ClusterRole{}
 
 // Numeric type codes identifying different cluster member states.
 const (
-	ClusterMemberStateCreated = 0
-	ClusterMemberStatePending = 1
+	ClusterMemberStateCreated   = 0
+	ClusterMemberStatePending   = 1
+	ClusterMemberStateEvacuated = 2
 )
 
 // NodeInfo holds information about a single LXD instance in a cluster.
@@ -149,7 +150,10 @@ func (n NodeInfo) ToAPI(cluster *Cluster, node *Node) (*api.ClusterMember, error
 	}
 	result.FailureDomain = failureDomain
 
-	if n.IsOffline(offlineThreshold) {
+	if n.State == ClusterMemberStateEvacuated {
+		result.Status = "Evacuated"
+		result.Message = "Unavailable due to maintenance"
+	} else if n.IsOffline(offlineThreshold) {
 		result.Status = "Offline"
 		result.Message = fmt.Sprintf("No heartbeat for %s (%s)", time.Now().Sub(n.Heartbeat), n.Heartbeat)
 	} else {
@@ -463,14 +467,20 @@ func (c *ClusterTx) nodes(pending bool, where string, args ...interface{}) ([]No
 			&nodes[i].State,
 		}
 	}
-	if pending {
-		args = append([]interface{}{ClusterMemberStatePending}, args...)
-	} else {
-		args = append([]interface{}{ClusterMemberStateCreated}, args...)
-	}
 
 	// Get the node entries
-	sql = "SELECT id, name, address, description, schema, api_extensions, heartbeat, arch, state FROM nodes WHERE state=?"
+	sql = "SELECT id, name, address, description, schema, api_extensions, heartbeat, arch, state FROM nodes "
+
+	if pending {
+		// Include only pending nodes
+		sql += fmt.Sprintf("WHERE state=? ")
+	} else {
+		// Include created and evacuated nodes
+		sql += fmt.Sprintf("WHERE state!=? ")
+	}
+
+	args = append([]interface{}{ClusterMemberStatePending}, args...)
+
 	if where != "" {
 		sql += fmt.Sprintf("AND %s ", where)
 	}
@@ -682,6 +692,25 @@ func (c *ClusterTx) UpdateNodeFailureDomain(id int64, domain string) error {
 	if err != nil {
 		return err
 	}
+	if n != 1 {
+		return fmt.Errorf("Query updated %d rows instead of 1", n)
+	}
+
+	return nil
+}
+
+// UpdateNodeStatus changes the state of a node.
+func (c *ClusterTx) UpdateNodeStatus(id int64, state int) error {
+	result, err := c.tx.Exec("UPDATE nodes SET state=? WHERE id=?", state, id)
+	if err != nil {
+		return err
+	}
+
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
 	if n != 1 {
 		return fmt.Errorf("Query updated %d rows instead of 1", n)
 	}
@@ -965,7 +994,7 @@ func (c *ClusterTx) GetNodeWithLeastInstances(archs []int, defaultArch int) (str
 	containers := -1
 	isDefaultArchChosen := false
 	for _, node := range nodes {
-		if node.IsOffline(threshold) {
+		if node.State == ClusterMemberStateEvacuated || node.IsOffline(threshold) {
 			continue
 		}
 
@@ -1044,6 +1073,31 @@ func (c *ClusterTx) SetNodeVersion(id int64, version [2]int) error {
 
 func nodeIsOffline(threshold time.Duration, heartbeat time.Time) bool {
 	return heartbeat.Before(time.Now().Add(-threshold))
+}
+
+// LocalNodeIsEvacuated returns whether the local node is in the evacuated state.
+func (c *Cluster) LocalNodeIsEvacuated() bool {
+	isEvacuated := false
+
+	err := c.Transaction(func(tx *ClusterTx) error {
+		name, err := tx.GetLocalNodeName()
+		if err != nil {
+			return err
+		}
+
+		node, err := tx.GetNodeByName(name)
+		if err != nil {
+			return nil
+		}
+
+		isEvacuated = node.State == ClusterMemberStateEvacuated
+		return nil
+	})
+	if err != nil {
+		return false
+	}
+
+	return isEvacuated
 }
 
 // DefaultOfflineThreshold is the default value for the
