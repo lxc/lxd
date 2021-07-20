@@ -94,22 +94,6 @@ func VolumeTypeNameToDBType(volumeTypeName string) (int, error) {
 	return -1, fmt.Errorf("Invalid storage volume type name")
 }
 
-// VolumeDBTypeToTypeName converts an internal volume DB type code string to a volume type string.
-func VolumeDBTypeToTypeName(volumeDBType int) (string, error) {
-	switch volumeDBType {
-	case db.StoragePoolVolumeTypeContainer:
-		return db.StoragePoolVolumeTypeNameContainer, nil
-	case db.StoragePoolVolumeTypeVM:
-		return db.StoragePoolVolumeTypeNameVM, nil
-	case db.StoragePoolVolumeTypeImage:
-		return db.StoragePoolVolumeTypeNameImage, nil
-	case db.StoragePoolVolumeTypeCustom:
-		return db.StoragePoolVolumeTypeNameCustom, nil
-	}
-
-	return "", fmt.Errorf("Invalid storage volume type code")
-}
-
 // VolumeTypeToDBType converts volume type to internal volume type DB code.
 func VolumeTypeToDBType(volType drivers.VolumeType) (int, error) {
 	switch volType {
@@ -152,6 +136,18 @@ func InstanceTypeToVolumeType(instType instancetype.Type) (drivers.VolumeType, e
 	}
 
 	return "", fmt.Errorf("Invalid instance type")
+}
+
+// VolumeTypeToAPIInstanceType converts storage driver volume type to API instance type type.
+func VolumeTypeToAPIInstanceType(volType drivers.VolumeType) (api.InstanceType, error) {
+	switch volType {
+	case drivers.VolumeTypeContainer:
+		return api.InstanceTypeContainer, nil
+	case drivers.VolumeTypeVM:
+		return api.InstanceTypeVM, nil
+	}
+
+	return api.InstanceTypeAny, fmt.Errorf("Volume type doesn't have equivalent instance type")
 }
 
 // VolumeContentTypeToDBContentType converts volume type to internal code.

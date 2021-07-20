@@ -30,6 +30,14 @@ const lvmEscapedHyphen = "--"
 
 var errLVMNotFound = fmt.Errorf("Not found")
 
+// lvmVolumeTypePrefixes maps the different volume types to LVM volume name prefixes.
+var lvmVolumeTypePrefixes = map[VolumeType]string{
+	VolumeTypeContainer: "containers",
+	VolumeTypeVM:        "virtual-machines",
+	VolumeTypeImage:     "images",
+	VolumeTypeCustom:    "custom",
+}
+
 // usesThinpool indicates whether the config specifies to use a thin pool or not.
 func (d *lvm) usesThinpool() bool {
 	// Default is to use a thinpool.
@@ -463,18 +471,7 @@ func (d *lvm) lvmFullVolumeName(volType VolumeType, contentType ContentType, vol
 		return volName
 	}
 
-	// Convert volume type to internal volume prefix.
-	volTypePrefix := ""
-	switch volType {
-	case VolumeTypeContainer:
-		volTypePrefix = "containers"
-	case VolumeTypeVM:
-		volTypePrefix = "virtual-machines"
-	case VolumeTypeImage:
-		volTypePrefix = "images"
-	case VolumeTypeCustom:
-		volTypePrefix = "custom"
-	}
+	volTypePrefix := lvmVolumeTypePrefixes[volType]
 
 	// Invalid volume type supplied.
 	if volTypePrefix == "" {

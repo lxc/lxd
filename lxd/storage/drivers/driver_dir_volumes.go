@@ -3,6 +3,7 @@ package drivers
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -318,6 +319,36 @@ func (d *dir) SetVolumeQuota(vol Volume, size string, allowUnsafeResize bool, op
 // GetVolumeDiskPath returns the location of a disk volume.
 func (d *dir) GetVolumeDiskPath(vol Volume) (string, error) {
 	return genericVFSGetVolumeDiskPath(vol)
+}
+
+// ListVolumes returns a list of LXD volumes in storage pool.
+func (d *dir) ListVolumes() ([]Volume, error) {
+	var vols []Volume
+	poolMountPath := GetPoolMountPath(d.name)
+
+	for _, volType := range d.Info().VolumeTypes {
+		if len(BaseDirectories[volType]) < 1 {
+			return nil, fmt.Errorf("Cannot get base directory name for volume type %q", volType)
+		}
+
+		volTypePath := filepath.Join(poolMountPath, BaseDirectories[volType][0])
+		ents, err := ioutil.ReadDir(volTypePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to list directory %q for volume type %q", volTypePath, volType)
+		}
+
+		for _, ent := range ents {
+			// tomp TODO detect custom block volumes here.
+			contentType := ContentTypeFS
+			if volType == VolumeTypeVM {
+				contentType = ContentTypeBlock
+			}
+
+			vols = append(vols, NewVolume(d, d.name, volType, contentType, ent.Name(), nil, d.config))
+		}
+	}
+
+	return vols, nil
 }
 
 // MountVolume simulates mounting a volume.

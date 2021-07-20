@@ -1053,6 +1053,11 @@ func (d *zfs) GetVolumeDiskPath(vol Volume) (string, error) {
 	return "", fmt.Errorf("Could not locate a zvol for %s", d.dataset(vol, false))
 }
 
+// ListVolumes returns a list of LXD volumes in storage pool.
+func (d *zfs) ListVolumes() ([]Volume, error) {
+	return nil, ErrNotImplemented
+}
+
 // MountVolume mounts a volume and increments ref counter. Please call UnmountVolume() when done with the volume.
 func (d *zfs) MountVolume(vol Volume, op *operations.Operation) error {
 	unlock := vol.MountLock()
