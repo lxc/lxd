@@ -139,10 +139,38 @@ func Parse(pkg *ast.Package, name string, kind string) (*Mapping, error) {
 		return nil, errors.Wrapf(err, "Failed to parse %q", name)
 	}
 
+	filterStr := findStruct(pkg.Scope, name+"Filter")
+	if filterStr == nil {
+		return nil, fmt.Errorf("No declaration found for %q", name+"Filter")
+	}
+
+	filters, err := parseStruct(filterStr, kind)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to parse %q", name)
+	}
+
 	m := &Mapping{
 		Package: pkg.Name,
 		Name:    name,
 		Fields:  fields,
+		Filters: filters,
+	}
+
+	for _, filter := range filters {
+		// Filter field must be present in original struct.
+		field, err := m.FilterFieldByName(filter.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		// Filter field's indirect reference must be present in the Filter struct.
+		if field.IsIndirect() {
+			indirectField := lex.Camel(field.Config.Get("via"))
+			_, err := m.FilterFieldByName(indirectField)
+			if err != nil {
+				return nil, fmt.Errorf("field %q requires field %q in struct %q", field.Name, indirectField, name+"Filter")
+			}
+		}
 	}
 
 	return m, nil
@@ -233,14 +261,14 @@ func parseField(f *ast.Field, kind string) (*Field, error) {
 		}
 	}
 
-	typeName := parseType(f.Type)
+	typeObj := &Type{}
+
+	typeName := parseType(typeObj, f.Type)
 	if typeName == "" {
 		return nil, fmt.Errorf("Unsupported type for field %q", name.Name)
 	}
 
-	typeObj := Type{
-		Name: typeName,
-	}
+	typeObj.Name = typeName
 
 	if IsColumnType(typeName) {
 		typeObj.Code = TypeColumn
@@ -276,19 +304,20 @@ func parseField(f *ast.Field, kind string) (*Field, error) {
 
 	field := Field{
 		Name:   name.Name,
-		Type:   typeObj,
+		Type:   *typeObj,
 		Config: config,
 	}
 
 	return &field, nil
 }
 
-func parseType(x ast.Expr) string {
+func parseType(typeObj *Type, x ast.Expr) string {
 	switch t := x.(type) {
 	case *ast.StarExpr:
-		return parseType(t.X)
+		typeObj.IsPointer = true
+		return parseType(typeObj, t.X)
 	case *ast.SelectorExpr:
-		return parseType(t.X) + "." + t.Sel.String()
+		return parseType(typeObj, t.X) + "." + t.Sel.String()
 	case *ast.Ident:
 		s := t.String()
 		if s == "byte" {
@@ -296,9 +325,9 @@ func parseType(x ast.Expr) string {
 		}
 		return s
 	case *ast.ArrayType:
-		return "[" + parseType(t.Len) + "]" + parseType(t.Elt)
+		return "[" + parseType(typeObj, t.Len) + "]" + parseType(typeObj, t.Elt)
 	case *ast.MapType:
-		return "map[" + parseType(t.Key) + "]" + parseType(t.Value)
+		return "map[" + parseType(typeObj, t.Key) + "]" + parseType(typeObj, t.Value)
 	case *ast.BasicLit:
 		return t.Value
 	case nil:

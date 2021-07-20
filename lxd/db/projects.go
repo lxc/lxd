@@ -19,31 +19,35 @@ import (
 //go:generate -command mapper lxd-generate db mapper -t projects.mapper.go
 //go:generate mapper reset
 //
-//go:generate mapper stmt -e project names
-//go:generate mapper stmt -e project names-by-Name
-//go:generate mapper stmt -e project objects
-//go:generate mapper stmt -e project objects-by-Name
-//go:generate mapper stmt -e project used-by-ref
-//go:generate mapper stmt -e project used-by-ref-by-Name
-//go:generate mapper stmt -e project config-ref
-//go:generate mapper stmt -e project config-ref-by-Name
-//go:generate mapper stmt -e project create
-//go:generate mapper stmt -e project create-config-ref
-//go:generate mapper stmt -e project id
-//go:generate mapper stmt -e project rename
-//go:generate mapper stmt -e project update
-//go:generate mapper stmt -e project delete-by-Name
+//go:generate mapper stmt -p db -e project names
+//go:generate mapper stmt -p db -e project objects
+//go:generate mapper stmt -p db -e project used-by-ref
+//go:generate mapper stmt -p db -e project config-ref
+//go:generate mapper stmt -p db -e project create struct=Project
+//go:generate mapper stmt -p db -e project create-config-ref
+//go:generate mapper stmt -p db -e project id
+//go:generate mapper stmt -p db -e project rename
+//go:generate mapper stmt -p db -e project update struct=Project
+//go:generate mapper stmt -p db -e project delete
 //
-//go:generate mapper method -e project URIs
-//go:generate mapper method -e project List
-//go:generate mapper method -e project Get
-//go:generate mapper method -e project ConfigRef
-//go:generate mapper method -e project Exists
-//go:generate mapper method -e project Create
-//go:generate mapper method -e project UsedByRef
-//go:generate mapper method -e project ID
-//go:generate mapper method -e project Rename
-//go:generate mapper method -e project DeleteOne
+//go:generate mapper method -p db -e project URIs
+//go:generate mapper method -p db -e project List
+//go:generate mapper method -p db -e project Get struct=Project
+//go:generate mapper method -p db -e project ConfigRef
+//go:generate mapper method -p db -e project Exists struct=Project
+//go:generate mapper method -p db -e project Create struct=Project
+//go:generate mapper method -p db -e project UsedByRef
+//go:generate mapper method -p db -e project ID struct=Project
+//go:generate mapper method -p db -e project Rename
+//go:generate mapper method -p db -e project DeleteOne
+
+// Project represents a LXD project
+type Project struct {
+	Description string
+	Name        string
+	UsedBy      []string `db:"omit=create"`
+	Config      map[string]string
+}
 
 // ProjectFilter specifies potential query parameter fields.
 type ProjectFilter struct {
@@ -192,9 +196,9 @@ func (c *ClusterTx) InitProjectWithoutImages(project string) error {
 }
 
 // GetProject returns the project with the given key.
-func (c *Cluster) GetProject(projectName string) (*api.Project, error) {
+func (c *Cluster) GetProject(projectName string) (*Project, error) {
 	var err error
-	var p *api.Project
+	var p *Project
 	err = c.Transaction(func(tx *ClusterTx) error {
 		p, err = tx.GetProject(projectName)
 		if err != nil {

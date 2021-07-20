@@ -254,7 +254,8 @@ func (c *Cluster) GetURIFromEntity(entityType int, entityID int) (string, error)
 		var op Operation
 
 		err = c.transaction(func(tx *ClusterTx) error {
-			filter := OperationFilter{ID: int64(entityID)}
+			id := int64(entityID)
+			filter := OperationFilter{ID: &id}
 			ops, err := tx.GetOperations(filter)
 			if err != nil {
 				return err

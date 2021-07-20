@@ -118,7 +118,7 @@ func (n *ovn) uplinkRoutes(uplink *api.Network) ([]*net.IPNet, error) {
 
 // projectRestrictedSubnets parses the restrict.networks.subnets project setting and returns slice of *net.IPNet.
 // Returns nil slice if no project restrictions, or empty slice if no allowed subnets.
-func (n *ovn) projectRestrictedSubnets(p *api.Project, uplinkNetworkName string) ([]*net.IPNet, error) {
+func (n *ovn) projectRestrictedSubnets(p *db.Project, uplinkNetworkName string) ([]*net.IPNet, error) {
 	// Parse project's restricted subnets.
 	var projectRestrictedSubnets []*net.IPNet // Nil value indicates not restricted.
 	if shared.IsTrue(p.Config["restricted"]) && p.Config["restricted.networks.subnets"] != "" {
@@ -1405,7 +1405,7 @@ func (n *ovn) Create(clientType request.ClientType) error {
 }
 
 // allowedUplinkNetworks returns a list of allowed networks to use as uplinks based on project restrictions.
-func (n *ovn) allowedUplinkNetworks(p *api.Project) ([]string, error) {
+func (n *ovn) allowedUplinkNetworks(p *db.Project) ([]string, error) {
 	// Uplink networks are always from the default project.
 	networks, err := n.state.Cluster.GetNetworks(project.Default)
 	if err != nil {
@@ -1452,7 +1452,7 @@ func (n *ovn) allowedUplinkNetworks(p *api.Project) ([]string, error) {
 // validateUplinkNetwork checks if uplink network is allowed, and if empty string is supplied then tries to select
 // an uplink network from the allowedUplinkNetworks() list if there is only one allowed network.
 // Returns chosen uplink network name to use.
-func (n *ovn) validateUplinkNetwork(p *api.Project, uplinkNetworkName string) (string, error) {
+func (n *ovn) validateUplinkNetwork(p *db.Project, uplinkNetworkName string) (string, error) {
 	allowedUplinkNetworks, err := n.allowedUplinkNetworks(p)
 	if err != nil {
 		return "", err
@@ -2512,7 +2512,7 @@ func (n *ovn) instanceDevicePortRoutesParse(deviceConfig map[string]string) ([]*
 // InstanceDevicePortValidateExternalRoutes validates the external routes for an OVN instance port.
 func (n *ovn) InstanceDevicePortValidateExternalRoutes(deviceInstance instance.Instance, deviceName string, portExternalRoutes []*net.IPNet) error {
 	var err error
-	var p *api.Project
+	var p *db.Project
 	var projectNetworks map[string]map[int64]api.Network
 
 	// Get uplink routes.
@@ -3189,7 +3189,7 @@ func (n *ovn) ovnNICExternalRoutes(ourDeviceInstance instance.Instance, ourDevic
 		return false
 	}
 
-	err := n.state.Cluster.InstanceList(nil, func(inst db.Instance, p api.Project, profiles []api.Profile) error {
+	err := n.state.Cluster.InstanceList(nil, func(inst db.Instance, p db.Project, profiles []api.Profile) error {
 		// Get the instance's effective network project name.
 		instNetworkProject := project.NetworkProjectFromRecord(&p)
 		devices := db.ExpandInstanceDevices(deviceConfig.NewDevices(inst.Devices), profiles)
@@ -3302,7 +3302,7 @@ func (n *ovn) handleDependencyChange(uplinkName string, uplinkConfig map[string]
 
 			// Find all instance NICs that use this network, and re-add the logical OVN instance port.
 			// This will restore the l2proxy DNAT_AND_SNAT rules.
-			err = n.state.Cluster.InstanceList(nil, func(inst db.Instance, p api.Project, profiles []api.Profile) error {
+			err = n.state.Cluster.InstanceList(nil, func(inst db.Instance, p db.Project, profiles []api.Profile) error {
 				// Get the instance's effective network project name.
 				instNetworkProject := project.NetworkProjectFromRecord(&p)
 

@@ -23,14 +23,14 @@ import (
 // Basic creation and shutdown. By default, the gateway runs an in-memory gRPC
 // server.
 func TestGateway_Single(t *testing.T) {
-	db, cleanup := db.NewTestNode(t)
+	node, cleanup := db.NewTestNode(t)
 	defer cleanup()
 
 	cert := shared.TestingKeyPair()
-	gateway := newGateway(t, db, cert, cert)
+	gateway := newGateway(t, node, cert, cert)
 	defer gateway.Shutdown()
 
-	trustedCerts := func() map[int]map[string]x509.Certificate {
+	trustedCerts := func() map[db.CertificateType]map[string]x509.Certificate {
 		return nil
 	}
 
@@ -75,7 +75,7 @@ func TestGateway_Single(t *testing.T) {
 // If there's a network address configured, we expose the dqlite endpoint with
 // an HTTP handler.
 func TestGateway_SingleWithNetworkAddress(t *testing.T) {
-	db, cleanup := db.NewTestNode(t)
+	node, cleanup := db.NewTestNode(t)
 	defer cleanup()
 
 	cert := shared.TestingKeyPair()
@@ -84,12 +84,12 @@ func TestGateway_SingleWithNetworkAddress(t *testing.T) {
 	defer server.Close()
 
 	address := server.Listener.Addr().String()
-	setRaftRole(t, db, address)
+	setRaftRole(t, node, address)
 
-	gateway := newGateway(t, db, cert, cert)
+	gateway := newGateway(t, node, cert, cert)
 	defer gateway.Shutdown()
 
-	trustedCerts := func() map[int]map[string]x509.Certificate {
+	trustedCerts := func() map[db.CertificateType]map[string]x509.Certificate {
 		return nil
 	}
 
@@ -116,7 +116,7 @@ func TestGateway_SingleWithNetworkAddress(t *testing.T) {
 // When networked, the grpc and raft endpoints requires the cluster
 // certificate.
 func TestGateway_NetworkAuth(t *testing.T) {
-	db, cleanup := db.NewTestNode(t)
+	node, cleanup := db.NewTestNode(t)
 	defer cleanup()
 
 	cert := shared.TestingKeyPair()
@@ -125,12 +125,12 @@ func TestGateway_NetworkAuth(t *testing.T) {
 	defer server.Close()
 
 	address := server.Listener.Addr().String()
-	setRaftRole(t, db, address)
+	setRaftRole(t, node, address)
 
-	gateway := newGateway(t, db, cert, cert)
+	gateway := newGateway(t, node, cert, cert)
 	defer gateway.Shutdown()
 
-	trustedCerts := func() map[int]map[string]x509.Certificate {
+	trustedCerts := func() map[db.CertificateType]map[string]x509.Certificate {
 		return nil
 	}
 
@@ -156,7 +156,7 @@ func TestGateway_NetworkAuth(t *testing.T) {
 
 // RaftNodes returns all nodes of the cluster.
 func TestGateway_RaftNodesNotLeader(t *testing.T) {
-	db, cleanup := db.NewTestNode(t)
+	node, cleanup := db.NewTestNode(t)
 	defer cleanup()
 
 	cert := shared.TestingKeyPair()
@@ -165,9 +165,9 @@ func TestGateway_RaftNodesNotLeader(t *testing.T) {
 	defer server.Close()
 
 	address := server.Listener.Addr().String()
-	setRaftRole(t, db, address)
+	setRaftRole(t, node, address)
 
-	gateway := newGateway(t, db, cert, cert)
+	gateway := newGateway(t, node, cert, cert)
 	defer gateway.Shutdown()
 
 	nodes, err := gateway.RaftNodes()
@@ -179,11 +179,11 @@ func TestGateway_RaftNodesNotLeader(t *testing.T) {
 }
 
 // Create a new test Gateway with the given parameters, and ensure no error happens.
-func newGateway(t *testing.T, db *db.Node, networkCert *shared.CertInfo, serverCert *shared.CertInfo) *cluster.Gateway {
+func newGateway(t *testing.T, node *db.Node, networkCert *shared.CertInfo, serverCert *shared.CertInfo) *cluster.Gateway {
 	logging.Testing(t)
-	require.NoError(t, os.Mkdir(filepath.Join(db.Dir(), "global"), 0755))
+	require.NoError(t, os.Mkdir(filepath.Join(node.Dir(), "global"), 0755))
 	serverCertFunc := func() *shared.CertInfo { return serverCert }
-	gateway, err := cluster.NewGateway(db, networkCert, serverCertFunc, cluster.Latency(0.2), cluster.LogLevel("TRACE"))
+	gateway, err := cluster.NewGateway(node, networkCert, serverCertFunc, cluster.Latency(0.2), cluster.LogLevel("TRACE"))
 	require.NoError(t, err)
 	return gateway
 }

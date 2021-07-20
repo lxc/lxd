@@ -22,7 +22,7 @@ func storagePoolVolumeUpdateUsers(d *Daemon, projectName string, oldPoolName str
 	s := d.State()
 
 	// Update all instances that are using the volume with a local (non-expanded) device.
-	err := storagePools.VolumeUsedByInstanceDevices(s, oldPoolName, projectName, oldVol, false, func(dbInst db.Instance, project api.Project, profiles []api.Profile, usedByDevices []string) error {
+	err := storagePools.VolumeUsedByInstanceDevices(s, oldPoolName, projectName, oldVol, false, func(dbInst db.Instance, project db.Project, profiles []api.Profile, usedByDevices []string) error {
 		inst, err := instance.Load(s, db.InstanceToArgs(&dbInst), profiles)
 		if err != nil {
 			return err
@@ -60,7 +60,7 @@ func storagePoolVolumeUpdateUsers(d *Daemon, projectName string, oldPoolName str
 	}
 
 	// Update all profiles that are using the volume with a device.
-	err = storagePools.VolumeUsedByProfileDevices(s, oldPoolName, projectName, oldVol, func(profile db.Profile, p api.Project, usedByDevices []string) error {
+	err = storagePools.VolumeUsedByProfileDevices(s, oldPoolName, projectName, oldVol, func(profile db.Profile, p db.Project, usedByDevices []string) error {
 		for _, devName := range usedByDevices {
 			if _, exists := profile.Devices[devName]; exists {
 				profile.Devices[devName]["pool"] = newPoolName
@@ -131,7 +131,7 @@ func storagePoolVolumeUsedByGet(s *state.State, projectName string, poolName str
 
 	// Pass false to expandDevices, as we only want to see instances directly using a volume, rather than their
 	// profiles using a volume.
-	err = storagePools.VolumeUsedByInstanceDevices(s, poolName, projectName, vol, false, func(inst db.Instance, p api.Project, profiles []api.Profile, usedByDevices []string) error {
+	err = storagePools.VolumeUsedByInstanceDevices(s, poolName, projectName, vol, false, func(inst db.Instance, p db.Project, profiles []api.Profile, usedByDevices []string) error {
 		if inst.Project == project.Default {
 			volumeUsedBy = append(volumeUsedBy, fmt.Sprintf("/%s/instances/%s", version.APIVersion, inst.Name))
 		} else {
@@ -144,7 +144,7 @@ func storagePoolVolumeUsedByGet(s *state.State, projectName string, poolName str
 		return []string{}, err
 	}
 
-	err = storagePools.VolumeUsedByProfileDevices(s, poolName, projectName, vol, func(profile db.Profile, p api.Project, usedByDevices []string) error {
+	err = storagePools.VolumeUsedByProfileDevices(s, poolName, projectName, vol, func(profile db.Profile, p db.Project, usedByDevices []string) error {
 		if profile.Project == project.Default {
 			volumeUsedBy = append(volumeUsedBy, fmt.Sprintf("/%s/profiles/%s", version.APIVersion, profile.Name))
 		} else {

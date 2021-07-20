@@ -20,7 +20,7 @@ func TestOperation(t *testing.T) {
 	require.NoError(t, err)
 
 	opInfo := db.Operation{
-		NodeID:    tx.GetNodeID(),
+		NodeID:    *tx.GetNodeID(),
 		Type:      db.OperationInstanceCreate,
 		UUID:      "abcd",
 		ProjectID: &projectID,
@@ -64,7 +64,7 @@ func TestOperationNoProject(t *testing.T) {
 	defer cleanup()
 
 	opInfo := db.Operation{
-		NodeID: tx.GetNodeID(),
+		NodeID: *tx.GetNodeID(),
 		Type:   db.OperationInstanceCreate,
 		UUID:   "abcd",
 	}

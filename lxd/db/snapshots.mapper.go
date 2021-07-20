@@ -16,77 +16,116 @@ import (
 
 var _ = api.ServerEnvironment{}
 
-var instanceSnapshotObjects = cluster.RegisterStmt(`
+const instanceSnapshotObjects = cluster.RegisterStmt(`
 SELECT instances_snapshots.id, projects.name AS project, instances.name AS instance, instances_snapshots.name, instances_snapshots.creation_date, instances_snapshots.stateful, coalesce(instances_snapshots.description, ''), instances_snapshots.expiry_date
   FROM instances_snapshots JOIN projects ON instances.project_id = projects.id JOIN instances ON instances_snapshots.instance_id = instances.id
   ORDER BY projects.id, instances.id, instances_snapshots.name
 `)
-
-var instanceSnapshotObjectsByProjectAndInstance = cluster.RegisterStmt(`
+const instanceSnapshotObjectsByInstance = cluster.RegisterStmt(`
+SELECT instances_snapshots.id, projects.name AS project, instances.name AS instance, instances_snapshots.name, instances_snapshots.creation_date, instances_snapshots.stateful, coalesce(instances_snapshots.description, ''), instances_snapshots.expiry_date
+  FROM instances_snapshots JOIN projects ON instances.project_id = projects.id JOIN instances ON instances_snapshots.instance_id = instances.id
+  WHERE instance = ? ORDER BY projects.id, instances.id, instances_snapshots.name
+`)
+const instanceSnapshotObjectsByProjectAndInstance = cluster.RegisterStmt(`
 SELECT instances_snapshots.id, projects.name AS project, instances.name AS instance, instances_snapshots.name, instances_snapshots.creation_date, instances_snapshots.stateful, coalesce(instances_snapshots.description, ''), instances_snapshots.expiry_date
   FROM instances_snapshots JOIN projects ON instances.project_id = projects.id JOIN instances ON instances_snapshots.instance_id = instances.id
   WHERE project = ? AND instance = ? ORDER BY projects.id, instances.id, instances_snapshots.name
 `)
-
-var instanceSnapshotObjectsByProjectAndInstanceAndName = cluster.RegisterStmt(`
+const instanceSnapshotObjectsByName = cluster.RegisterStmt(`
+SELECT instances_snapshots.id, projects.name AS project, instances.name AS instance, instances_snapshots.name, instances_snapshots.creation_date, instances_snapshots.stateful, coalesce(instances_snapshots.description, ''), instances_snapshots.expiry_date
+  FROM instances_snapshots JOIN projects ON instances.project_id = projects.id JOIN instances ON instances_snapshots.instance_id = instances.id
+  WHERE instances_snapshots.name = ? ORDER BY projects.id, instances.id, instances_snapshots.name
+`)
+const instanceSnapshotObjectsByInstanceAndName = cluster.RegisterStmt(`
+SELECT instances_snapshots.id, projects.name AS project, instances.name AS instance, instances_snapshots.name, instances_snapshots.creation_date, instances_snapshots.stateful, coalesce(instances_snapshots.description, ''), instances_snapshots.expiry_date
+  FROM instances_snapshots JOIN projects ON instances.project_id = projects.id JOIN instances ON instances_snapshots.instance_id = instances.id
+  WHERE instance = ? AND instances_snapshots.name = ? ORDER BY projects.id, instances.id, instances_snapshots.name
+`)
+const instanceSnapshotObjectsByProjectAndInstanceAndName = cluster.RegisterStmt(`
 SELECT instances_snapshots.id, projects.name AS project, instances.name AS instance, instances_snapshots.name, instances_snapshots.creation_date, instances_snapshots.stateful, coalesce(instances_snapshots.description, ''), instances_snapshots.expiry_date
   FROM instances_snapshots JOIN projects ON instances.project_id = projects.id JOIN instances ON instances_snapshots.instance_id = instances.id
   WHERE project = ? AND instance = ? AND instances_snapshots.name = ? ORDER BY projects.id, instances.id, instances_snapshots.name
 `)
 
-var instanceSnapshotID = cluster.RegisterStmt(`
+const instanceSnapshotID = cluster.RegisterStmt(`
 SELECT instances_snapshots.id FROM instances_snapshots JOIN projects ON instances.project_id = projects.id JOIN instances ON instances_snapshots.instance_id = instances.id
   WHERE projects.name = ? AND instances.name = ? AND instances_snapshots.name = ?
 `)
 
-var instanceSnapshotConfigRef = cluster.RegisterStmt(`
+const instanceSnapshotConfigRef = cluster.RegisterStmt(`
 SELECT project, instance, name, key, value FROM instances_snapshots_config_ref ORDER BY project, instance, name
 `)
-
-var instanceSnapshotConfigRefByProjectAndInstance = cluster.RegisterStmt(`
+const instanceSnapshotConfigRefByInstance = cluster.RegisterStmt(`
+SELECT project, instance, name, key, value FROM instances_snapshots_config_ref WHERE instance = ? ORDER BY project, instance, name
+`)
+const instanceSnapshotConfigRefByProjectAndInstance = cluster.RegisterStmt(`
 SELECT project, instance, name, key, value FROM instances_snapshots_config_ref WHERE project = ? AND instance = ? ORDER BY project, instance, name
 `)
-
-var instanceSnapshotConfigRefByProjectAndInstanceAndName = cluster.RegisterStmt(`
+const instanceSnapshotConfigRefByName = cluster.RegisterStmt(`
+SELECT project, instance, name, key, value FROM instances_snapshots_config_ref WHERE name = ? ORDER BY project, instance, name
+`)
+const instanceSnapshotConfigRefByInstanceAndName = cluster.RegisterStmt(`
+SELECT project, instance, name, key, value FROM instances_snapshots_config_ref WHERE instance = ? AND name = ? ORDER BY project, instance, name
+`)
+const instanceSnapshotConfigRefByProjectAndInstanceAndName = cluster.RegisterStmt(`
 SELECT project, instance, name, key, value FROM instances_snapshots_config_ref WHERE project = ? AND instance = ? AND name = ? ORDER BY project, instance, name
 `)
 
-var instanceSnapshotDevicesRef = cluster.RegisterStmt(`
+const instanceSnapshotDevicesRef = cluster.RegisterStmt(`
 SELECT project, instance, name, device, type, key, value FROM instances_snapshots_devices_ref ORDER BY project, instance, name
 `)
-
-var instanceSnapshotDevicesRefByProjectAndInstance = cluster.RegisterStmt(`
+const instanceSnapshotDevicesRefByInstance = cluster.RegisterStmt(`
+SELECT project, instance, name, device, type, key, value FROM instances_snapshots_devices_ref WHERE instance = ? ORDER BY project, instance, name
+`)
+const instanceSnapshotDevicesRefByProjectAndInstance = cluster.RegisterStmt(`
 SELECT project, instance, name, device, type, key, value FROM instances_snapshots_devices_ref WHERE project = ? AND instance = ? ORDER BY project, instance, name
 `)
-
-var instanceSnapshotDevicesRefByProjectAndInstanceAndName = cluster.RegisterStmt(`
+const instanceSnapshotDevicesRefByName = cluster.RegisterStmt(`
+SELECT project, instance, name, device, type, key, value FROM instances_snapshots_devices_ref WHERE name = ? ORDER BY project, instance, name
+`)
+const instanceSnapshotDevicesRefByInstanceAndName = cluster.RegisterStmt(`
+SELECT project, instance, name, device, type, key, value FROM instances_snapshots_devices_ref WHERE instance = ? AND name = ? ORDER BY project, instance, name
+`)
+const instanceSnapshotDevicesRefByProjectAndInstanceAndName = cluster.RegisterStmt(`
 SELECT project, instance, name, device, type, key, value FROM instances_snapshots_devices_ref WHERE project = ? AND instance = ? AND name = ? ORDER BY project, instance, name
 `)
 
-var instanceSnapshotCreate = cluster.RegisterStmt(`
+const instanceSnapshotCreate = cluster.RegisterStmt(`
 INSERT INTO instances_snapshots (instance_id, name, creation_date, stateful, description, expiry_date)
   VALUES ((SELECT instances.id FROM instances JOIN projects ON projects.id = instances.project_id WHERE projects.name = ? AND instances.name = ?), ?, ?, ?, ?, ?)
 `)
 
-var instanceSnapshotCreateConfigRef = cluster.RegisterStmt(`
+const instanceSnapshotCreateConfigRef = cluster.RegisterStmt(`
 INSERT INTO instances_snapshots_config (instance_snapshot_id, key, value)
   VALUES (?, ?, ?)
 `)
 
-var instanceSnapshotCreateDevicesRef = cluster.RegisterStmt(`
+const instanceSnapshotCreateDevicesRef = cluster.RegisterStmt(`
 INSERT INTO instances_snapshots_devices (instance_snapshot_id, name, type)
   VALUES (?, ?, ?)
 `)
-var instanceSnapshotCreateDevicesConfigRef = cluster.RegisterStmt(`
+const instanceSnapshotCreateDevicesConfigRef = cluster.RegisterStmt(`
 INSERT INTO instances_snapshots_devices_config (instance_snapshot_device_id, key, value)
   VALUES (?, ?, ?)
 `)
 
-var instanceSnapshotRename = cluster.RegisterStmt(`
+const instanceSnapshotRename = cluster.RegisterStmt(`
 UPDATE instances_snapshots SET name = ? WHERE instance_id = (SELECT instances.id FROM instances JOIN projects ON projects.id = instances.project_id WHERE projects.name = ? AND instances.name = ?) AND name = ?
 `)
 
-var instanceSnapshotDeleteByProjectAndInstanceAndName = cluster.RegisterStmt(`
+const instanceSnapshotDeleteByInstance = cluster.RegisterStmt(`
+DELETE FROM instances_snapshots WHERE instance_id = (SELECT instances.id FROM instances WHERE instances.name = ?)
+`)
+const instanceSnapshotDeleteByProjectAndInstance = cluster.RegisterStmt(`
+DELETE FROM instances_snapshots WHERE instance_id = (SELECT instances.id FROM instances JOIN projects ON projects.id = instances.project_id WHERE projects.name = ? AND instances.name = ?)
+`)
+const instanceSnapshotDeleteByName = cluster.RegisterStmt(`
+DELETE FROM instances_snapshots WHERE name = ?
+`)
+const instanceSnapshotDeleteByInstanceAndName = cluster.RegisterStmt(`
+DELETE FROM instances_snapshots WHERE instance_id = (SELECT instances.id FROM instances WHERE instances.name = ?) AND name = ?
+`)
+const instanceSnapshotDeleteByProjectAndInstanceAndName = cluster.RegisterStmt(`
 DELETE FROM instances_snapshots WHERE instance_id = (SELECT instances.id FROM instances JOIN projects ON projects.id = instances.project_id WHERE projects.name = ? AND instances.name = ?) AND name = ?
 `)
 
@@ -122,6 +161,22 @@ func (c *ClusterTx) GetInstanceSnapshots(filter InstanceSnapshotFilter) ([]Insta
 		stmt = c.stmt(instanceSnapshotObjectsByProjectAndInstance)
 		args = []interface{}{
 			filter.Project,
+			filter.Instance,
+		}
+	} else if criteria["Instance"] != nil && criteria["Name"] != nil {
+		stmt = c.stmt(instanceSnapshotObjectsByInstanceAndName)
+		args = []interface{}{
+			filter.Instance,
+			filter.Name,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(instanceSnapshotObjectsByName)
+		args = []interface{}{
+			filter.Name,
+		}
+	} else if criteria["Instance"] != nil {
+		stmt = c.stmt(instanceSnapshotObjectsByInstance)
+		args = []interface{}{
 			filter.Instance,
 		}
 	} else {
@@ -385,6 +440,22 @@ func (c *ClusterTx) InstanceSnapshotConfigRef(filter InstanceSnapshotFilter) (ma
 			filter.Project,
 			filter.Instance,
 		}
+	} else if criteria["Instance"] != nil && criteria["Name"] != nil {
+		stmt = c.stmt(instanceSnapshotConfigRefByInstanceAndName)
+		args = []interface{}{
+			filter.Instance,
+			filter.Name,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(instanceSnapshotConfigRefByName)
+		args = []interface{}{
+			filter.Name,
+		}
+	} else if criteria["Instance"] != nil {
+		stmt = c.stmt(instanceSnapshotConfigRefByInstance)
+		args = []interface{}{
+			filter.Instance,
+		}
 	} else {
 		stmt = c.stmt(instanceSnapshotConfigRef)
 		args = []interface{}{}
@@ -482,6 +553,22 @@ func (c *ClusterTx) InstanceSnapshotDevicesRef(filter InstanceSnapshotFilter) (m
 		stmt = c.stmt(instanceSnapshotDevicesRefByProjectAndInstance)
 		args = []interface{}{
 			filter.Project,
+			filter.Instance,
+		}
+	} else if criteria["Instance"] != nil && criteria["Name"] != nil {
+		stmt = c.stmt(instanceSnapshotDevicesRefByInstanceAndName)
+		args = []interface{}{
+			filter.Instance,
+			filter.Name,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(instanceSnapshotDevicesRefByName)
+		args = []interface{}{
+			filter.Name,
+		}
+	} else if criteria["Instance"] != nil {
+		stmt = c.stmt(instanceSnapshotDevicesRefByInstance)
+		args = []interface{}{
 			filter.Instance,
 		}
 	} else {
@@ -602,6 +689,28 @@ func (c *ClusterTx) DeleteInstanceSnapshot(filter InstanceSnapshotFilter) error 
 			filter.Project,
 			filter.Instance,
 			filter.Name,
+		}
+	} else if criteria["Project"] != nil && criteria["Instance"] != nil {
+		stmt = c.stmt(instanceSnapshotDeleteByProjectAndInstance)
+		args = []interface{}{
+			filter.Project,
+			filter.Instance,
+		}
+	} else if criteria["Instance"] != nil && criteria["Name"] != nil {
+		stmt = c.stmt(instanceSnapshotDeleteByInstanceAndName)
+		args = []interface{}{
+			filter.Instance,
+			filter.Name,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(instanceSnapshotDeleteByName)
+		args = []interface{}{
+			filter.Name,
+		}
+	} else if criteria["Instance"] != nil {
+		stmt = c.stmt(instanceSnapshotDeleteByInstance)
+		args = []interface{}{
+			filter.Instance,
 		}
 	} else {
 		return fmt.Errorf("No valid filter for instance_snapshot delete")

@@ -16,119 +16,134 @@ import (
 
 var _ = api.ServerEnvironment{}
 
-var profileNames = cluster.RegisterStmt(`
+const profileNames = cluster.RegisterStmt(`
 SELECT projects.name AS project, profiles.name
   FROM profiles JOIN projects ON profiles.project_id = projects.id
   ORDER BY projects.id, profiles.name
 `)
-
-var profileNamesByProject = cluster.RegisterStmt(`
+const profileNamesByProject = cluster.RegisterStmt(`
 SELECT projects.name AS project, profiles.name
   FROM profiles JOIN projects ON profiles.project_id = projects.id
   WHERE project = ? ORDER BY projects.id, profiles.name
 `)
-
-var profileNamesByProjectAndName = cluster.RegisterStmt(`
+const profileNamesByName = cluster.RegisterStmt(`
+SELECT projects.name AS project, profiles.name
+  FROM profiles JOIN projects ON profiles.project_id = projects.id
+  WHERE profiles.name = ? ORDER BY projects.id, profiles.name
+`)
+const profileNamesByProjectAndName = cluster.RegisterStmt(`
 SELECT projects.name AS project, profiles.name
   FROM profiles JOIN projects ON profiles.project_id = projects.id
   WHERE project = ? AND profiles.name = ? ORDER BY projects.id, profiles.name
 `)
 
-var profileObjects = cluster.RegisterStmt(`
+const profileObjects = cluster.RegisterStmt(`
 SELECT profiles.id, projects.name AS project, profiles.name, coalesce(profiles.description, '')
   FROM profiles JOIN projects ON profiles.project_id = projects.id
   ORDER BY projects.id, profiles.name
 `)
-
-var profileObjectsByProject = cluster.RegisterStmt(`
+const profileObjectsByProject = cluster.RegisterStmt(`
 SELECT profiles.id, projects.name AS project, profiles.name, coalesce(profiles.description, '')
   FROM profiles JOIN projects ON profiles.project_id = projects.id
   WHERE project = ? ORDER BY projects.id, profiles.name
 `)
-
-var profileObjectsByProjectAndName = cluster.RegisterStmt(`
+const profileObjectsByName = cluster.RegisterStmt(`
+SELECT profiles.id, projects.name AS project, profiles.name, coalesce(profiles.description, '')
+  FROM profiles JOIN projects ON profiles.project_id = projects.id
+  WHERE profiles.name = ? ORDER BY projects.id, profiles.name
+`)
+const profileObjectsByProjectAndName = cluster.RegisterStmt(`
 SELECT profiles.id, projects.name AS project, profiles.name, coalesce(profiles.description, '')
   FROM profiles JOIN projects ON profiles.project_id = projects.id
   WHERE project = ? AND profiles.name = ? ORDER BY projects.id, profiles.name
 `)
 
-var profileConfigRef = cluster.RegisterStmt(`
+const profileConfigRef = cluster.RegisterStmt(`
 SELECT project, name, key, value FROM profiles_config_ref ORDER BY project, name
 `)
-
-var profileConfigRefByProject = cluster.RegisterStmt(`
+const profileConfigRefByProject = cluster.RegisterStmt(`
 SELECT project, name, key, value FROM profiles_config_ref WHERE project = ? ORDER BY project, name
 `)
-
-var profileConfigRefByProjectAndName = cluster.RegisterStmt(`
+const profileConfigRefByName = cluster.RegisterStmt(`
+SELECT project, name, key, value FROM profiles_config_ref WHERE name = ? ORDER BY project, name
+`)
+const profileConfigRefByProjectAndName = cluster.RegisterStmt(`
 SELECT project, name, key, value FROM profiles_config_ref WHERE project = ? AND name = ? ORDER BY project, name
 `)
 
-var profileDevicesRef = cluster.RegisterStmt(`
+const profileDevicesRef = cluster.RegisterStmt(`
 SELECT project, name, device, type, key, value FROM profiles_devices_ref ORDER BY project, name
 `)
-
-var profileDevicesRefByProject = cluster.RegisterStmt(`
+const profileDevicesRefByProject = cluster.RegisterStmt(`
 SELECT project, name, device, type, key, value FROM profiles_devices_ref WHERE project = ? ORDER BY project, name
 `)
-
-var profileDevicesRefByProjectAndName = cluster.RegisterStmt(`
+const profileDevicesRefByName = cluster.RegisterStmt(`
+SELECT project, name, device, type, key, value FROM profiles_devices_ref WHERE name = ? ORDER BY project, name
+`)
+const profileDevicesRefByProjectAndName = cluster.RegisterStmt(`
 SELECT project, name, device, type, key, value FROM profiles_devices_ref WHERE project = ? AND name = ? ORDER BY project, name
 `)
 
-var profileUsedByRef = cluster.RegisterStmt(`
+const profileUsedByRef = cluster.RegisterStmt(`
 SELECT project, name, value FROM profiles_used_by_ref ORDER BY project, name
 `)
-
-var profileUsedByRefByProject = cluster.RegisterStmt(`
+const profileUsedByRefByProject = cluster.RegisterStmt(`
 SELECT project, name, value FROM profiles_used_by_ref WHERE project = ? ORDER BY project, name
 `)
-
-var profileUsedByRefByProjectAndName = cluster.RegisterStmt(`
+const profileUsedByRefByName = cluster.RegisterStmt(`
+SELECT project, name, value FROM profiles_used_by_ref WHERE name = ? ORDER BY project, name
+`)
+const profileUsedByRefByProjectAndName = cluster.RegisterStmt(`
 SELECT project, name, value FROM profiles_used_by_ref WHERE project = ? AND name = ? ORDER BY project, name
 `)
 
-var profileID = cluster.RegisterStmt(`
+const profileID = cluster.RegisterStmt(`
 SELECT profiles.id FROM profiles JOIN projects ON profiles.project_id = projects.id
   WHERE projects.name = ? AND profiles.name = ?
 `)
 
-var profileCreate = cluster.RegisterStmt(`
+const profileCreate = cluster.RegisterStmt(`
 INSERT INTO profiles (project_id, name, description)
   VALUES ((SELECT projects.id FROM projects WHERE projects.name = ?), ?, ?)
 `)
 
-var profileCreateConfigRef = cluster.RegisterStmt(`
+const profileCreateConfigRef = cluster.RegisterStmt(`
 INSERT INTO profiles_config (profile_id, key, value)
   VALUES (?, ?, ?)
 `)
 
-var profileCreateDevicesRef = cluster.RegisterStmt(`
+const profileCreateDevicesRef = cluster.RegisterStmt(`
 INSERT INTO profiles_devices (profile_id, name, type)
   VALUES (?, ?, ?)
 `)
-var profileCreateDevicesConfigRef = cluster.RegisterStmt(`
+const profileCreateDevicesConfigRef = cluster.RegisterStmt(`
 INSERT INTO profiles_devices_config (profile_device_id, key, value)
   VALUES (?, ?, ?)
 `)
 
-var profileRename = cluster.RegisterStmt(`
+const profileRename = cluster.RegisterStmt(`
 UPDATE profiles SET name = ? WHERE project_id = (SELECT projects.id FROM projects WHERE projects.name = ?) AND name = ?
 `)
 
-var profileDeleteByProjectAndName = cluster.RegisterStmt(`
+const profileDeleteByProject = cluster.RegisterStmt(`
+DELETE FROM profiles WHERE project_id = (SELECT projects.id FROM projects WHERE projects.name = ?)
+`)
+const profileDeleteByName = cluster.RegisterStmt(`
+DELETE FROM profiles WHERE name = ?
+`)
+const profileDeleteByProjectAndName = cluster.RegisterStmt(`
 DELETE FROM profiles WHERE project_id = (SELECT projects.id FROM projects WHERE projects.name = ?) AND name = ?
 `)
 
-var profileDeleteConfigRef = cluster.RegisterStmt(`
+const profileDeleteConfigRef = cluster.RegisterStmt(`
 DELETE FROM profiles_config WHERE profile_id = ?
 `)
 
-var profileDeleteDevicesRef = cluster.RegisterStmt(`
+const profileDeleteDevicesRef = cluster.RegisterStmt(`
 DELETE FROM profiles_devices WHERE profile_id = ?
 `)
 
-var profileUpdate = cluster.RegisterStmt(`
+const profileUpdate = cluster.RegisterStmt(`
 UPDATE profiles
   SET project_id = (SELECT id FROM projects WHERE name = ?), name = ?, description = ?
  WHERE id = ?
@@ -159,6 +174,11 @@ func (c *ClusterTx) GetProfileURIs(filter ProfileFilter) ([]string, error) {
 		stmt = c.stmt(profileNamesByProject)
 		args = []interface{}{
 			filter.Project,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(profileNamesByName)
+		args = []interface{}{
+			filter.Name,
 		}
 	} else {
 		stmt = c.stmt(profileNames)
@@ -199,6 +219,11 @@ func (c *ClusterTx) GetProfiles(filter ProfileFilter) ([]Profile, error) {
 		stmt = c.stmt(profileObjectsByProject)
 		args = []interface{}{
 			filter.Project,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(profileObjectsByName)
+		args = []interface{}{
+			filter.Name,
 		}
 	} else {
 		stmt = c.stmt(profileObjects)
@@ -390,6 +415,11 @@ func (c *ClusterTx) ProfileConfigRef(filter ProfileFilter) (map[string]map[strin
 		args = []interface{}{
 			filter.Project,
 		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(profileConfigRefByName)
+		args = []interface{}{
+			filter.Name,
+		}
 	} else {
 		stmt = c.stmt(profileConfigRef)
 		args = []interface{}{}
@@ -474,6 +504,11 @@ func (c *ClusterTx) ProfileDevicesRef(filter ProfileFilter) (map[string]map[stri
 		stmt = c.stmt(profileDevicesRefByProject)
 		args = []interface{}{
 			filter.Project,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(profileDevicesRefByName)
+		args = []interface{}{
+			filter.Name,
 		}
 	} else {
 		stmt = c.stmt(profileDevicesRef)
@@ -575,6 +610,11 @@ func (c *ClusterTx) ProfileUsedByRef(filter ProfileFilter) (map[string]map[strin
 		stmt = c.stmt(profileUsedByRefByProject)
 		args = []interface{}{
 			filter.Project,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(profileUsedByRefByName)
+		args = []interface{}{
+			filter.Name,
 		}
 	} else {
 		stmt = c.stmt(profileUsedByRef)
@@ -731,6 +771,16 @@ func (c *ClusterTx) DeleteProfile(filter ProfileFilter) error {
 		stmt = c.stmt(profileDeleteByProjectAndName)
 		args = []interface{}{
 			filter.Project,
+			filter.Name,
+		}
+	} else if criteria["Project"] != nil {
+		stmt = c.stmt(profileDeleteByProject)
+		args = []interface{}{
+			filter.Project,
+		}
+	} else if criteria["Name"] != nil {
+		stmt = c.stmt(profileDeleteByName)
+		args = []interface{}{
 			filter.Name,
 		}
 	} else {

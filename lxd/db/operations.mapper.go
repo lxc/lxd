@@ -16,41 +16,72 @@ import (
 
 var _ = api.ServerEnvironment{}
 
-var operationObjects = cluster.RegisterStmt(`
-SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.node_id, operations.type
+const operationObjects = cluster.RegisterStmt(`
+SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
   FROM operations JOIN nodes ON operations.node_id = nodes.id
   ORDER BY operations.id, operations.uuid
 `)
-
-var operationObjectsByNodeID = cluster.RegisterStmt(`
-SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
-  FROM operations JOIN nodes ON operations.node_id = nodes.id
-  WHERE operations.node_id = ? ORDER BY operations.id, operations.uuid
-`)
-
-var operationObjectsByID = cluster.RegisterStmt(`
+const operationObjectsByID = cluster.RegisterStmt(`
 SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
   FROM operations JOIN nodes ON operations.node_id = nodes.id
   WHERE operations.id = ? ORDER BY operations.id, operations.uuid
 `)
-
-var operationObjectsByUUID = cluster.RegisterStmt(`
+const operationObjectsByNodeID = cluster.RegisterStmt(`
+SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
+  FROM operations JOIN nodes ON operations.node_id = nodes.id
+  WHERE operations.node_id = ? ORDER BY operations.id, operations.uuid
+`)
+const operationObjectsByIDAndNodeID = cluster.RegisterStmt(`
+SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
+  FROM operations JOIN nodes ON operations.node_id = nodes.id
+  WHERE operations.id = ? AND operations.node_id = ? ORDER BY operations.id, operations.uuid
+`)
+const operationObjectsByUUID = cluster.RegisterStmt(`
 SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
   FROM operations JOIN nodes ON operations.node_id = nodes.id
   WHERE operations.uuid = ? ORDER BY operations.id, operations.uuid
 `)
+const operationObjectsByIDAndUUID = cluster.RegisterStmt(`
+SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
+  FROM operations JOIN nodes ON operations.node_id = nodes.id
+  WHERE operations.id = ? AND operations.uuid = ? ORDER BY operations.id, operations.uuid
+`)
+const operationObjectsByNodeIDAndUUID = cluster.RegisterStmt(`
+SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
+  FROM operations JOIN nodes ON operations.node_id = nodes.id
+  WHERE operations.node_id = ? AND operations.uuid = ? ORDER BY operations.id, operations.uuid
+`)
+const operationObjectsByIDAndNodeIDAndUUID = cluster.RegisterStmt(`
+SELECT operations.id, operations.uuid, nodes.address AS node_address, operations.project_id, operations.node_id, operations.type
+  FROM operations JOIN nodes ON operations.node_id = nodes.id
+  WHERE operations.id = ? AND operations.node_id = ? AND operations.uuid = ? ORDER BY operations.id, operations.uuid
+`)
 
-var operationCreateOrReplace = cluster.RegisterStmt(`
+const operationCreateOrReplace = cluster.RegisterStmt(`
 INSERT OR REPLACE INTO operations (uuid, project_id, node_id, type)
  VALUES (?, ?, ?, ?)
 `)
 
-var operationDeleteByUUID = cluster.RegisterStmt(`
+const operationDeleteByID = cluster.RegisterStmt(`
+DELETE FROM operations WHERE id = ?
+`)
+const operationDeleteByNodeID = cluster.RegisterStmt(`
+DELETE FROM operations WHERE node_id = ?
+`)
+const operationDeleteByIDAndNodeID = cluster.RegisterStmt(`
+DELETE FROM operations WHERE id = ? AND node_id = ?
+`)
+const operationDeleteByUUID = cluster.RegisterStmt(`
 DELETE FROM operations WHERE uuid = ?
 `)
-
-var operationDeleteByNodeID = cluster.RegisterStmt(`
-DELETE FROM operations WHERE node_id = ?
+const operationDeleteByIDAndUUID = cluster.RegisterStmt(`
+DELETE FROM operations WHERE id = ? AND uuid = ?
+`)
+const operationDeleteByNodeIDAndUUID = cluster.RegisterStmt(`
+DELETE FROM operations WHERE node_id = ? AND uuid = ?
+`)
+const operationDeleteByIDAndNodeIDAndUUID = cluster.RegisterStmt(`
+DELETE FROM operations WHERE id = ? AND node_id = ? AND uuid = ?
 `)
 
 // GetOperations returns all available operations.
@@ -60,10 +91,10 @@ func (c *ClusterTx) GetOperations(filter OperationFilter) ([]Operation, error) {
 
 	// Check which filter criteria are active.
 	criteria := map[string]interface{}{}
-	if filter.ID != -1 {
+	if filter.ID != nil {
 		criteria["ID"] = filter.ID
 	}
-	if filter.NodeID != -1 {
+	if filter.NodeID != nil {
 		criteria["NodeID"] = filter.NodeID
 	}
 	if filter.UUID != "" {
@@ -74,7 +105,32 @@ func (c *ClusterTx) GetOperations(filter OperationFilter) ([]Operation, error) {
 	var stmt *sql.Stmt
 	var args []interface{}
 
-	if criteria["UUID"] != nil {
+	if criteria["ID"] != nil && criteria["NodeID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationObjectsByIDAndNodeIDAndUUID)
+		args = []interface{}{
+			filter.ID,
+			filter.NodeID,
+			filter.UUID,
+		}
+	} else if criteria["NodeID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationObjectsByNodeIDAndUUID)
+		args = []interface{}{
+			filter.NodeID,
+			filter.UUID,
+		}
+	} else if criteria["ID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationObjectsByIDAndUUID)
+		args = []interface{}{
+			filter.ID,
+			filter.UUID,
+		}
+	} else if criteria["ID"] != nil && criteria["NodeID"] != nil {
+		stmt = c.stmt(operationObjectsByIDAndNodeID)
+		args = []interface{}{
+			filter.ID,
+			filter.NodeID,
+		}
+	} else if criteria["UUID"] != nil {
 		stmt = c.stmt(operationObjectsByUUID)
 		args = []interface{}{
 			filter.UUID,
@@ -147,10 +203,10 @@ func (c *ClusterTx) CreateOrReplaceOperation(object Operation) (int64, error) {
 func (c *ClusterTx) DeleteOperation(filter OperationFilter) error {
 	// Check which filter criteria are active.
 	criteria := map[string]interface{}{}
-	if filter.ID != -1 {
+	if filter.ID != nil {
 		criteria["ID"] = filter.ID
 	}
-	if filter.NodeID != -1 {
+	if filter.NodeID != nil {
 		criteria["NodeID"] = filter.NodeID
 	}
 	if filter.UUID != "" {
@@ -161,7 +217,32 @@ func (c *ClusterTx) DeleteOperation(filter OperationFilter) error {
 	var stmt *sql.Stmt
 	var args []interface{}
 
-	if criteria["UUID"] != nil {
+	if criteria["ID"] != nil && criteria["NodeID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationDeleteByIDAndNodeIDAndUUID)
+		args = []interface{}{
+			filter.ID,
+			filter.NodeID,
+			filter.UUID,
+		}
+	} else if criteria["NodeID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationDeleteByNodeIDAndUUID)
+		args = []interface{}{
+			filter.NodeID,
+			filter.UUID,
+		}
+	} else if criteria["ID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationDeleteByIDAndUUID)
+		args = []interface{}{
+			filter.ID,
+			filter.UUID,
+		}
+	} else if criteria["ID"] != nil && criteria["NodeID"] != nil {
+		stmt = c.stmt(operationDeleteByIDAndNodeID)
+		args = []interface{}{
+			filter.ID,
+			filter.NodeID,
+		}
+	} else if criteria["UUID"] != nil {
 		stmt = c.stmt(operationDeleteByUUID)
 		args = []interface{}{
 			filter.UUID,
@@ -170,6 +251,11 @@ func (c *ClusterTx) DeleteOperation(filter OperationFilter) error {
 		stmt = c.stmt(operationDeleteByNodeID)
 		args = []interface{}{
 			filter.NodeID,
+		}
+	} else if criteria["ID"] != nil {
+		stmt = c.stmt(operationDeleteByID)
+		args = []interface{}{
+			filter.ID,
 		}
 	} else {
 		return fmt.Errorf("No valid filter for operation delete")
@@ -194,10 +280,10 @@ func (c *ClusterTx) DeleteOperation(filter OperationFilter) error {
 func (c *ClusterTx) DeleteOperations(filter OperationFilter) error {
 	// Check which filter criteria are active.
 	criteria := map[string]interface{}{}
-	if filter.ID != -1 {
+	if filter.ID != nil {
 		criteria["ID"] = filter.ID
 	}
-	if filter.NodeID != -1 {
+	if filter.NodeID != nil {
 		criteria["NodeID"] = filter.NodeID
 	}
 	if filter.UUID != "" {
@@ -208,7 +294,32 @@ func (c *ClusterTx) DeleteOperations(filter OperationFilter) error {
 	var stmt *sql.Stmt
 	var args []interface{}
 
-	if criteria["UUID"] != nil {
+	if criteria["ID"] != nil && criteria["NodeID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationDeleteByIDAndNodeIDAndUUID)
+		args = []interface{}{
+			filter.ID,
+			filter.NodeID,
+			filter.UUID,
+		}
+	} else if criteria["NodeID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationDeleteByNodeIDAndUUID)
+		args = []interface{}{
+			filter.NodeID,
+			filter.UUID,
+		}
+	} else if criteria["ID"] != nil && criteria["UUID"] != nil {
+		stmt = c.stmt(operationDeleteByIDAndUUID)
+		args = []interface{}{
+			filter.ID,
+			filter.UUID,
+		}
+	} else if criteria["ID"] != nil && criteria["NodeID"] != nil {
+		stmt = c.stmt(operationDeleteByIDAndNodeID)
+		args = []interface{}{
+			filter.ID,
+			filter.NodeID,
+		}
+	} else if criteria["UUID"] != nil {
 		stmt = c.stmt(operationDeleteByUUID)
 		args = []interface{}{
 			filter.UUID,
@@ -217,6 +328,11 @@ func (c *ClusterTx) DeleteOperations(filter OperationFilter) error {
 		stmt = c.stmt(operationDeleteByNodeID)
 		args = []interface{}{
 			filter.NodeID,
+		}
+	} else if criteria["ID"] != nil {
+		stmt = c.stmt(operationDeleteByID)
+		args = []interface{}{
+			filter.ID,
 		}
 	} else {
 		return fmt.Errorf("No valid filter for operation delete")

@@ -16,72 +16,68 @@ import (
 
 var _ = api.ServerEnvironment{}
 
-var projectNames = cluster.RegisterStmt(`
+const projectNames = cluster.RegisterStmt(`
 SELECT projects.name
   FROM projects
   ORDER BY projects.name
 `)
-
-var projectNamesByName = cluster.RegisterStmt(`
+const projectNamesByName = cluster.RegisterStmt(`
 SELECT projects.name
   FROM projects
   WHERE projects.name = ? ORDER BY projects.name
 `)
 
-var projectObjects = cluster.RegisterStmt(`
+const projectObjects = cluster.RegisterStmt(`
 SELECT projects.description, projects.name
   FROM projects
   ORDER BY projects.name
 `)
-
-var projectObjectsByName = cluster.RegisterStmt(`
+const projectObjectsByName = cluster.RegisterStmt(`
 SELECT projects.description, projects.name
   FROM projects
   WHERE projects.name = ? ORDER BY projects.name
 `)
 
-var projectUsedByRef = cluster.RegisterStmt(`
+const projectUsedByRef = cluster.RegisterStmt(`
 SELECT name, value FROM projects_used_by_ref ORDER BY name
 `)
-
-var projectUsedByRefByName = cluster.RegisterStmt(`
+const projectUsedByRefByName = cluster.RegisterStmt(`
 SELECT name, value FROM projects_used_by_ref WHERE name = ? ORDER BY name
 `)
 
-var projectConfigRef = cluster.RegisterStmt(`
+const projectConfigRef = cluster.RegisterStmt(`
 SELECT name, key, value FROM projects_config_ref ORDER BY name
 `)
-
-var projectConfigRefByName = cluster.RegisterStmt(`
+const projectConfigRefByName = cluster.RegisterStmt(`
 SELECT name, key, value FROM projects_config_ref WHERE name = ? ORDER BY name
 `)
 
-var projectCreate = cluster.RegisterStmt(`
+const projectCreate = cluster.RegisterStmt(`
 INSERT INTO projects (description, name)
   VALUES (?, ?)
 `)
 
-var projectCreateConfigRef = cluster.RegisterStmt(`
+const projectCreateConfigRef = cluster.RegisterStmt(`
 INSERT INTO projects_config (project_id, key, value)
   VALUES (?, ?, ?)
 `)
 
-var projectID = cluster.RegisterStmt(`
+const projectID = cluster.RegisterStmt(`
 SELECT projects.id FROM projects
   WHERE projects.name = ?
 `)
 
-var projectRename = cluster.RegisterStmt(`
+const projectRename = cluster.RegisterStmt(`
 UPDATE projects SET name = ? WHERE name = ?
 `)
 
-var projectUpdate = cluster.RegisterStmt(`
+const projectUpdate = cluster.RegisterStmt(`
 UPDATE projects
-  SET description = ?
+  SET description = ?, name = ?
  WHERE id = ?
 `)
 
-var projectDeleteByName = cluster.RegisterStmt(`
+const projectDeleteByName = cluster.RegisterStmt(`
 DELETE FROM projects WHERE name = ?
 `)
 
@@ -114,9 +110,9 @@ func (c *ClusterTx) GetProjectURIs(filter ProjectFilter) ([]string, error) {
 }
 
 // GetProjects returns all available projects.
-func (c *ClusterTx) GetProjects(filter ProjectFilter) ([]api.Project, error) {
+func (c *ClusterTx) GetProjects(filter ProjectFilter) ([]Project, error) {
 	// Result slice.
-	objects := make([]api.Project, 0)
+	objects := make([]Project, 0)
 
 	// Check which filter criteria are active.
 	criteria := map[string]interface{}{}
@@ -140,7 +136,7 @@ func (c *ClusterTx) GetProjects(filter ProjectFilter) ([]api.Project, error) {
 
 	// Dest function for scanning a row.
 	dest := func(i int) []interface{} {
-		objects = append(objects, api.Project{})
+		objects = append(objects, Project{})
 		return []interface{}{
 			&objects[i].Description,
 			&objects[i].Name,
@@ -151,20 +147,6 @@ func (c *ClusterTx) GetProjects(filter ProjectFilter) ([]api.Project, error) {
 	err := query.SelectObjects(stmt, dest, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to fetch projects")
-	}
-
-	// Fill field Config.
-	configObjects, err := c.ProjectConfigRef(filter)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to fetch field Config")
-	}
-
-	for i := range objects {
-		value := configObjects[objects[i].Name]
-		if value == nil {
-			value = map[string]string{}
-		}
-		objects[i].Config = value
 	}
 
 	// Fill field UsedBy.
@@ -189,11 +171,25 @@ func (c *ClusterTx) GetProjects(filter ProjectFilter) ([]api.Project, error) {
 		objects[i].UsedBy = value
 	}
 
+	// Fill field Config.
+	configObjects, err := c.ProjectConfigRef(filter)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to fetch field Config")
+	}
+
+	for i := range objects {
+		value := configObjects[objects[i].Name]
+		if value == nil {
+			value = map[string]string{}
+		}
+		objects[i].Config = value
+	}
+
 	return objects, nil
 }
 
 // GetProject returns the project with the given key.
-func (c *ClusterTx) GetProject(name string) (*api.Project, error) {
+func (c *ClusterTx) GetProject(name string) (*Project, error) {
 	filter := ProjectFilter{}
 	filter.Name = name
 
@@ -291,7 +287,7 @@ func (c *ClusterTx) ProjectExists(name string) (bool, error) {
 }
 
 // CreateProject adds a new project to the database.
-func (c *ClusterTx) CreateProject(object api.ProjectsPost) (int64, error) {
+func (c *ClusterTx) CreateProject(object Project) (int64, error) {
 	// Check if a project with the same key exists.
 	exists, err := c.ProjectExists(object.Name)
 	if err != nil {

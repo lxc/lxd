@@ -17,26 +17,16 @@ import (
 //go:generate mapper reset
 //
 //go:generate mapper stmt -p db -e profile names
-//go:generate mapper stmt -p db -e profile names-by-Project
-//go:generate mapper stmt -p db -e profile names-by-Project-and-Name
 //go:generate mapper stmt -p db -e profile objects
-//go:generate mapper stmt -p db -e profile objects-by-Project
-//go:generate mapper stmt -p db -e profile objects-by-Project-and-Name
 //go:generate mapper stmt -p db -e profile config-ref
-//go:generate mapper stmt -p db -e profile config-ref-by-Project
-//go:generate mapper stmt -p db -e profile config-ref-by-Project-and-Name
 //go:generate mapper stmt -p db -e profile devices-ref
-//go:generate mapper stmt -p db -e profile devices-ref-by-Project
-//go:generate mapper stmt -p db -e profile devices-ref-by-Project-and-Name
 //go:generate mapper stmt -p db -e profile used-by-ref
-//go:generate mapper stmt -p db -e profile used-by-ref-by-Project
-//go:generate mapper stmt -p db -e profile used-by-ref-by-Project-and-Name
 //go:generate mapper stmt -p db -e profile id
 //go:generate mapper stmt -p db -e profile create struct=Profile
 //go:generate mapper stmt -p db -e profile create-config-ref
 //go:generate mapper stmt -p db -e profile create-devices-ref
 //go:generate mapper stmt -p db -e profile rename
-//go:generate mapper stmt -p db -e profile delete-by-Project-and-Name
+//go:generate mapper stmt -p db -e profile delete
 //go:generate mapper stmt -p db -e profile delete-config-ref
 //go:generate mapper stmt -p db -e profile delete-devices-ref
 //go:generate mapper stmt -p db -e profile update struct=Profile

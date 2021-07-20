@@ -2031,7 +2031,7 @@ func pruneLeftoverImages(d *Daemon) {
 }
 
 func pruneExpiredImages(ctx context.Context, d *Daemon, op *operations.Operation) error {
-	var projects []api.Project
+	var projects []db.Project
 	err := d.cluster.Transaction(func(tx *db.ClusterTx) error {
 		var err error
 		projects, err = tx.GetProjects(db.ProjectFilter{})
@@ -2055,7 +2055,7 @@ func pruneExpiredImages(ctx context.Context, d *Daemon, op *operations.Operation
 	return nil
 }
 
-func pruneExpiredImagesInProject(ctx context.Context, d *Daemon, project api.Project, op *operations.Operation) error {
+func pruneExpiredImagesInProject(ctx context.Context, d *Daemon, project db.Project, op *operations.Operation) error {
 	var expiry int64
 	var err error
 	if project.Config["images.remote_cache_expiry"] != "" {

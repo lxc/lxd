@@ -501,7 +501,7 @@ func clusterPutJoin(d *Daemon, r *http.Request, req api.ClusterPut) response.Res
 		}
 
 		// Get a list of projects for networks.
-		var projects []api.Project
+		var projects []db.Project
 
 		err = d.cluster.Transaction(func(tx *db.ClusterTx) error {
 			projects, err = tx.GetProjects(db.ProjectFilter{})

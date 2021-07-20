@@ -25,42 +25,15 @@ import (
 //go:generate mapper reset
 //
 //go:generate mapper stmt -p db -e instance objects
-//go:generate mapper stmt -p db -e instance objects-by-Project
-//go:generate mapper stmt -p db -e instance objects-by-Project-and-Type
-//go:generate mapper stmt -p db -e instance objects-by-Project-and-Type-and-Node
-//go:generate mapper stmt -p db -e instance objects-by-Project-and-Type-and-Node-and-Name
-//go:generate mapper stmt -p db -e instance objects-by-Project-and-Type-and-Name
-//go:generate mapper stmt -p db -e instance objects-by-Project-and-Name
-//go:generate mapper stmt -p db -e instance objects-by-Project-and-Name-and-Node
-//go:generate mapper stmt -p db -e instance objects-by-Project-and-Node
-//go:generate mapper stmt -p db -e instance objects-by-Type
-//go:generate mapper stmt -p db -e instance objects-by-Type-and-Name
-//go:generate mapper stmt -p db -e instance objects-by-Type-and-Name-and-Node
-//go:generate mapper stmt -p db -e instance objects-by-Type-and-Node
-//go:generate mapper stmt -p db -e instance objects-by-Node
-//go:generate mapper stmt -p db -e instance objects-by-Node-and-Name
-//go:generate mapper stmt -p db -e instance objects-by-Name
 //go:generate mapper stmt -p db -e instance profiles-ref
-//go:generate mapper stmt -p db -e instance profiles-ref-by-Project
-//go:generate mapper stmt -p db -e instance profiles-ref-by-Node
-//go:generate mapper stmt -p db -e instance profiles-ref-by-Project-and-Node
-//go:generate mapper stmt -p db -e instance profiles-ref-by-Project-and-Name
 //go:generate mapper stmt -p db -e instance config-ref
-//go:generate mapper stmt -p db -e instance config-ref-by-Project
-//go:generate mapper stmt -p db -e instance config-ref-by-Node
-//go:generate mapper stmt -p db -e instance config-ref-by-Project-and-Node
-//go:generate mapper stmt -p db -e instance config-ref-by-Project-and-Name
 //go:generate mapper stmt -p db -e instance devices-ref
-//go:generate mapper stmt -p db -e instance devices-ref-by-Project
-//go:generate mapper stmt -p db -e instance devices-ref-by-Node
-//go:generate mapper stmt -p db -e instance devices-ref-by-Project-and-Node
-//go:generate mapper stmt -p db -e instance devices-ref-by-Project-and-Name
 //go:generate mapper stmt -p db -e instance id
 //go:generate mapper stmt -p db -e instance create struct=Instance
 //go:generate mapper stmt -p db -e instance create-config-ref
 //go:generate mapper stmt -p db -e instance create-devices-ref
 //go:generate mapper stmt -p db -e instance rename
-//go:generate mapper stmt -p db -e instance delete-by-Project-and-Name
+//go:generate mapper stmt -p db -e instance delete
 //go:generate mapper stmt -p db -e instance delete-config-ref
 //go:generate mapper stmt -p db -e instance delete-devices-ref
 //go:generate mapper stmt -p db -e instance delete-profiles-ref
@@ -103,7 +76,7 @@ type InstanceFilter struct {
 	Project string
 	Name    string
 	Node    string
-	Type    instancetype.Type
+	Type    instancetype.Type `db:"omit=profiles-ref,config-ref"`
 }
 
 // InstanceFilterAllInstances returns a predefined filter for returning all instances.
@@ -332,9 +305,9 @@ var ErrInstanceListStop = fmt.Errorf("search stopped")
 
 // InstanceList loads all instances across all projects and for each instance runs the instanceFunc passing in the
 // instance and it's project and profiles. Accepts optional filter argument to specify a subset of instances.
-func (c *Cluster) InstanceList(filter *InstanceFilter, instanceFunc func(inst Instance, project api.Project, profiles []api.Profile) error) error {
+func (c *Cluster) InstanceList(filter *InstanceFilter, instanceFunc func(inst Instance, project Project, profiles []api.Profile) error) error {
 	var instances []Instance
-	projectMap := map[string]api.Project{}
+	projectMap := map[string]Project{}
 	projectHasProfiles := map[string]bool{}
 	profilesByProjectAndName := map[string]map[string]Profile{}
 

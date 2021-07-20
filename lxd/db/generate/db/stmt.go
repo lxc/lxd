@@ -42,10 +42,6 @@ func NewStmt(database, pkg, entity, kind string, config map[string]string) (*Stm
 
 // Generate plumbing and wiring code for the desired statement.
 func (s *Stmt) Generate(buf *file.Buffer) error {
-	if strings.HasPrefix(s.kind, "objects") {
-		return s.objects(buf)
-	}
-
 	if strings.HasPrefix(s.kind, "create") && strings.HasSuffix(s.kind, "-ref") {
 		return s.createRef(buf)
 	}
@@ -54,19 +50,13 @@ func (s *Stmt) Generate(buf *file.Buffer) error {
 		return s.deleteRef(buf)
 	}
 
-	if strings.HasSuffix(s.kind, "-ref") || strings.Contains(s.kind, "-ref-by-") {
+	if strings.HasSuffix(s.kind, "-ref") {
 		return s.ref(buf)
 	}
 
-	if strings.HasPrefix(s.kind, "names") {
-		return s.names(buf)
-	}
-
-	if strings.HasPrefix(s.kind, "delete") {
-		return s.delete(buf)
-	}
-
 	switch s.kind {
+	case "objects":
+		return s.objects(buf)
 	case "create":
 		return s.create(buf, false)
 	case "create-or-replace":
@@ -77,6 +67,10 @@ func (s *Stmt) Generate(buf *file.Buffer) error {
 		return s.rename(buf)
 	case "update":
 		return s.update(buf)
+	case "delete":
+		return s.delete(buf)
+	case "names":
+		return s.names(buf)
 	default:
 		return fmt.Errorf("Unknown statement '%s'", s.kind)
 	}
@@ -89,88 +83,86 @@ func (s *Stmt) objects(buf *file.Buffer) error {
 	}
 
 	where := ""
+	filterCombinations := mapping.FilterCombinations()
+	for _, filters := range filterCombinations {
+		if len(filters) > 0 {
+			where = "WHERE "
+			for i, filter := range filters {
+				if i > 0 {
+					where += "AND "
+				}
 
-	if strings.HasPrefix(s.kind, "objects-by") {
-		filters := strings.Split(s.kind[len("objects-by-"):], "-and-")
-		where = "WHERE "
+				if filter == "Parent" {
+					where += fmt.Sprintf("SUBSTR(%s.name,1,?)=? ", lex.Plural(s.entity))
+					continue
+				}
 
-		for i, filter := range filters {
-			if i > 0 {
-				where += "AND "
+				field, err := mapping.FilterFieldByName(filter)
+				if err != nil {
+					return err
+				}
+
+				var column string
+				if field.IsScalar() {
+					column = lex.Snake(field.Name)
+				} else {
+					column = mapping.FieldColumnName(field.Name)
+				}
+
+				comparison, ok := field.Config["comparison"]
+				if !ok {
+					comparison = []string{"equal"}
+				}
+				switch comparison[0] {
+				case "equal":
+					where += fmt.Sprintf("%s = ? ", column)
+				case "like":
+					where += fmt.Sprintf("%s LIKE ? ", column)
+				default:
+					panic("unknown 'comparison' value")
+				}
 			}
+		}
 
-			if filter == "Parent" {
-				where += fmt.Sprintf("SUBSTR(%s.name,1,?)=? ", lex.Plural(s.entity))
-				continue
-			}
-
-			field, err := mapping.FilterFieldByName(filter)
-			if err != nil {
-				return err
-			}
-
-			var column string
+		boiler := stmts["objects"]
+		fields := mapping.ColumnFields()
+		columns := make([]string, len(fields))
+		for i, field := range fields {
 			if field.IsScalar() {
-				column = lex.Snake(field.Name)
+				columns[i] = field.Column()
 			} else {
-				column = mapping.FieldColumnName(field.Name)
-			}
-
-			comparison, ok := field.Config["comparison"]
-			if !ok {
-				comparison = []string{"equal"}
-			}
-			switch comparison[0] {
-			case "equal":
-				where += fmt.Sprintf("%s = ? ", column)
-			case "like":
-				where += fmt.Sprintf("%s LIKE ? ", column)
-			default:
-				panic("unknown 'comparison' value")
-			}
-
-		}
-
-	}
-
-	boiler := stmts["objects"]
-	fields := mapping.ColumnFields()
-	columns := make([]string, len(fields))
-	for i, field := range fields {
-		if field.IsScalar() {
-			columns[i] = field.Column()
-		} else {
-			columns[i] = mapping.FieldColumnName(field.Name)
-			coalesce, ok := field.Config["coalesce"]
-			if ok {
-				columns[i] = fmt.Sprintf("coalesce(%s, %s)", columns[i], coalesce[0])
+				columns[i] = mapping.FieldColumnName(field.Name)
+				coalesce, ok := field.Config["coalesce"]
+				if ok {
+					columns[i] = fmt.Sprintf("coalesce(%s, %s)", columns[i], coalesce[0])
+				}
 			}
 		}
-	}
-	nk := mapping.NaturalKey()
-	orderBy := make([]string, len(nk))
-	for i, field := range nk {
-		if field.IsScalar() {
-			orderBy[i] = lex.Plural(lex.Snake(field.Name)) + ".id"
-		} else {
-			orderBy[i] = mapping.FieldColumnName(field.Name)
+		nk := mapping.NaturalKey()
+		orderBy := make([]string, len(nk))
+		for i, field := range nk {
+			if field.IsScalar() {
+				orderBy[i] = lex.Plural(lex.Snake(field.Name)) + ".id"
+			} else {
+				orderBy[i] = mapping.FieldColumnName(field.Name)
+			}
 		}
-	}
 
-	table := entityTable(s.entity)
-	for _, field := range mapping.ScalarFields() {
-		join := field.Config.Get("join")
-		right := strings.Split(join, ".")[0]
-		via := entityTable(s.entity)
-		if field.Config.Get("via") != "" {
-			via = entityTable(field.Config.Get("via"))
+		table := entityTable(s.entity)
+		for _, field := range mapping.ScalarFields() {
+			join := field.Config.Get("join")
+			right := strings.Split(join, ".")[0]
+			via := entityTable(s.entity)
+			if field.Config.Get("via") != "" {
+				via = entityTable(field.Config.Get("via"))
+			}
+			table += fmt.Sprintf(" JOIN %s ON %s.%s_id = %s.id", right, via, lex.Singular(right), right)
 		}
-		table += fmt.Sprintf(" JOIN %s ON %s.%s_id = %s.id", right, via, lex.Singular(right), right)
+
+		sql := fmt.Sprintf(boiler, strings.Join(columns, ", "), table, where, strings.Join(orderBy, ", "))
+
+		s.register(buf, sql, filters...)
 	}
-
-	sql := fmt.Sprintf(boiler, strings.Join(columns, ", "), table, where, strings.Join(orderBy, ", "))
-
-	s.register(buf, sql)
 	return nil
 }
 
@@ -206,11 +198,12 @@ func (s *Stmt) names(buf *file.Buffer) error {
 
 	where := ""
 
-	if strings.HasPrefix(s.kind, "names-by") {
-		filters := strings.Split(s.kind[len("names-by-"):], "-and-")
-		where = "WHERE "
-
+	for _, filters := range mapping.FilterCombinations() {
 		for i, filter := range filters {
+			if i == 0 {
+				where = "WHERE "
+			}
+
 			field, err := mapping.FilterFieldByName(filter)
 
 			if err != nil {
@@ -231,11 +224,10 @@ func (s *Stmt) names(buf *file.Buffer) error {
 			where += fmt.Sprintf("%s = ? ", column)
 		}
 
+		boiler := stmts["names"]
+		sql := fmt.Sprintf(boiler, strings.Join(columns, ", "), table, where, strings.Join(orderBy, ", "))
+		s.register(buf, sql, filters...)
 	}
-
-	boiler := stmts["names"]
-	sql := fmt.Sprintf(boiler, strings.Join(columns, ", "), table, where, strings.Join(orderBy, ", "))
-	s.register(buf, sql)
 	return nil
 }
 
@@ -303,11 +295,13 @@ func (s *Stmt) ref(buf *file.Buffer) error {
 	}
 
 	where := ""
-	if strings.Contains(s.kind, "-ref-by-") {
-		filters := strings.Split(s.kind[strings.Index(s.kind, "-ref-by-")+len("-ref-by-"):], "-and-")
-		where = "WHERE "
+	for _, filters := range mapping.FilterCombinations() {
 
 		for i, filter := range filters {
+			if i == 0 {
+				where = "WHERE "
+			}
+
 			field, err := mapping.FilterFieldByName(filter)
 
 			if err != nil {
@@ -321,18 +315,18 @@ func (s *Stmt) ref(buf *file.Buffer) error {
 			column := lex.Snake(field.Name)
 			where += fmt.Sprintf("%s = ? ", column)
 		}
+
+		orderBy := make([]string, len(nk))
+		for i, field := range nk {
+			orderBy[i] = lex.Snake(field.Name)
+		}
+
+		sql := fmt.Sprintf(
+			"SELECT %s FROM %s %sORDER BY %s", strings.Join(columns, ", "),
+			table, where, strings.Join(orderBy, ", "))
+
+		s.register(buf, sql, filters...)
 	}
-
-	orderBy := make([]string, len(nk))
-	for i, field := range nk {
-		orderBy[i] = lex.Snake(field.Name)
-	}
-
-	sql := fmt.Sprintf(
-		"SELECT %s FROM %s %sORDER BY %s", strings.Join(columns, ", "),
-		table, where, strings.Join(orderBy, ", "))
-
-	s.register(buf, sql)
 
 	return nil
 }
@@ -444,7 +438,7 @@ func (s *Stmt) createRef(buf *file.Buffer) error {
 		sql = fmt.Sprintf(stmts["create"], table+"_config", columns, params)
 
 		kind := fmt.Sprintf("Create%sConfigRef", field.Name)
-		buf.L("var %s = %s.RegisterStmt(`\n%s\n`)", stmtCodeVar(s.entity, kind), s.db, sql)
+		buf.L("const %s = %s.RegisterStmt(`\n%s\n`)", stmtCodeVar(s.entity, kind), s.db, sql)
 	}
 
 	return nil
@@ -517,23 +511,25 @@ func (s *Stmt) delete(buf *file.Buffer) error {
 
 	table := entityTable(s.entity)
 
-	fields := []*Field{}
-	where := whereClause(mapping.NaturalKey())
-
-	if strings.HasPrefix(s.kind, "delete-by") {
-		filters := strings.Split(s.kind[len("delete-by-"):], "-and-")
+	for _, filters := range mapping.FilterCombinations() {
+		fields := []*Field{}
 		for _, filter := range filters {
 			field, err := mapping.FilterFieldByName(filter)
 			if err != nil {
 				return err
 			}
+
 			fields = append(fields, field)
 		}
-		where = whereClause(fields)
-	}
 
-	sql := fmt.Sprintf(stmts["delete"], table, where)
-	s.register(buf, sql)
+		where := whereClause(fields)
+
+		// Only produce a delete statement if there is a valid field to delete by.
+		if where != "" {
+			sql := fmt.Sprintf(stmts["delete"], table, where)
+			s.register(buf, sql, filters...)
+		}
+	}
 	return nil
 }
 
@@ -578,6 +574,11 @@ func whereClause(fields []*Field) string {
 			continue
 		}
 		directFields = append(directFields, field)
+	}
+
+	// If there are no valid direct fields, don't return a where clause.
+	if len(directFields) == 0 {
+		return ""
 	}
 
 	where := make([]string, len(directFields))
@@ -652,7 +653,7 @@ func (s *Stmt) register(buf *file.Buffer, sql string, filters ...string) {
 	if kind == "id" {
 		kind = "ID" // silence go lints
 	}
-	buf.L("var %s = %s.RegisterStmt(`\n%s\n`)", stmtCodeVar(s.entity, kind, filters...), s.db, sql)
+	buf.L("const %s = %s.RegisterStmt(`\n%s\n`)", stmtCodeVar(s.entity, kind, filters...), s.db, sql)
 }
 
 // Map of boilerplate statements.

@@ -496,7 +496,7 @@ func Join(state *state.State, gateway *Gateway, networkCert *shared.CertInfo, se
 			op := db.Operation{
 				UUID:   operation.UUID,
 				Type:   operation.Type,
-				NodeID: tx.GetNodeID(),
+				NodeID: *tx.GetNodeID(),
 			}
 			_, err := tx.CreateOrReplaceOperation(op)
 			if err != nil {
@@ -958,7 +958,8 @@ func Purge(cluster *db.Cluster, name string) error {
 			return errors.Wrapf(err, "Failed to remove member %q", name)
 		}
 
-		filter := db.CertificateFilter{Name: name, Type: db.CertificateTypeServer}
+		certType := db.CertificateTypeServer
+		filter := db.CertificateFilter{Name: name, Type: &certType}
 		err = tx.DeleteCertificates(filter)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to remove member %q certificate from trust store", name)

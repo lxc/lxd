@@ -158,7 +158,7 @@ func getInstanceCountLimit(info *projectInfo, instanceType instancetype.Type) (i
 }
 
 // Check restrictions on setting volatile.* keys.
-func checkRestrictionsOnVolatileConfig(project *api.Project, instanceType instancetype.Type, instanceName string, config, currentConfig map[string]string, strip bool) error {
+func checkRestrictionsOnVolatileConfig(project *db.Project, instanceType instancetype.Type, instanceName string, config, currentConfig map[string]string, strip bool) error {
 	if project.Config["restrict"] == "false" {
 		return nil
 	}
@@ -402,7 +402,7 @@ func checkAggregateLimits(info *projectInfo, aggregateKeys []string) error {
 
 // Check that the project's restrictions are not violated across the given
 // instances and profiles.
-func checkRestrictions(project *api.Project, instances []db.Instance, profiles []db.Profile) error {
+func checkRestrictions(project *db.Project, instances []db.Instance, profiles []db.Profile) error {
 	containerConfigChecks := map[string]func(value string) error{}
 	devicesChecks := map[string]func(value map[string]string) error{}
 
@@ -816,11 +816,9 @@ func AllowProjectUpdate(tx *db.ClusterTx, projectName string, config map[string]
 
 	for _, key := range changed {
 		if strings.HasPrefix(key, "restricted.") {
-			project := &api.Project{
-				Name: projectName,
-				ProjectPut: api.ProjectPut{
-					Config: config,
-				},
+			project := &db.Project{
+				Name:   projectName,
+				Config: config,
 			}
 
 			err := checkRestrictions(project, info.Instances, info.Profiles)
@@ -955,7 +953,7 @@ func validateAggregateLimit(totals map[string]int64, key, value string) error {
 }
 
 // Return true if the project has some limits or restrictions set.
-func projectHasLimitsOrRestrictions(project *api.Project) bool {
+func projectHasLimitsOrRestrictions(project *db.Project) bool {
 	for k, v := range project.Config {
 		if strings.HasPrefix(k, "limits.") {
 			return true
@@ -972,7 +970,7 @@ func projectHasLimitsOrRestrictions(project *api.Project) bool {
 // Hold information associated with the project, such as profiles and
 // instances.
 type projectInfo struct {
-	Project   *api.Project
+	Project   *db.Project
 	Profiles  []db.Profile
 	Instances []db.Instance
 	Volumes   []db.StorageVolumeArgs
@@ -1275,7 +1273,7 @@ func CheckClusterTargetRestriction(tx *db.ClusterTx, r *http.Request, projectNam
 }
 
 // Return true if particular restriction in project is violated
-func projectHasRestriction(project *api.Project, restrictionKey string, blockValue string) bool {
+func projectHasRestriction(project *db.Project, restrictionKey string, blockValue string) bool {
 	restricted := project.Config["restricted"]
 	if !shared.IsTrue(restricted) {
 		return false

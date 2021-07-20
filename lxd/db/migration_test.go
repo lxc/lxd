@@ -70,7 +70,7 @@ func TestImportPreClusteringData(t *testing.T) {
 		cert := certs[0]
 		assert.Equal(t, 1, cert.ID)
 		assert.Equal(t, "abcd:efgh", cert.Fingerprint)
-		assert.Equal(t, 1, cert.Type)
+		assert.Equal(t, db.CertificateTypeClient, cert.Type)
 		assert.Equal(t, "foo", cert.Name)
 		assert.Equal(t, "FOO", cert.Certificate)
 		return nil

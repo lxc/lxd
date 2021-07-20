@@ -14,6 +14,7 @@ type Mapping struct {
 	Package string   // Package of the Go struct
 	Name    string   // Name of the Go struct.
 	Fields  []*Field // Metadata about the Go struct.
+	Filters []*Field // Metadata about the Go struct used for filter fields.
 }
 
 // NaturalKey returns the struct fields that can be used as natural key for
@@ -75,16 +76,60 @@ func (m *Mapping) FieldColumnName(name string) string {
 // FilterFieldByName returns the field with the given name if that field can be
 // used as query filter, an error otherwise.
 func (m *Mapping) FilterFieldByName(name string) (*Field, error) {
-	field := m.FieldByName(name)
-	if field == nil {
-		return nil, fmt.Errorf("Unknown filter %q", name)
+	for _, field := range m.Filters {
+		if field.Name == name {
+			if f := m.FieldByName(field.Name); f != nil {
+				if field.Type.Code != TypeColumn {
+					return nil, fmt.Errorf("Unknown filter %q not a column", name)
+				}
+
+				// Use the filter struct's type instead to deal with zero values.
+				f.Type = field.Type
+
+				return f, nil
+			}
+		}
+	}
+	return nil, fmt.Errorf("Unknown filter %q", name)
+}
+
+// FilterCombinations returns the power set of the filter fields, excluding combinations where indirect fields are present without their reference fields.
+func (m *Mapping) FilterCombinations() [][]string {
+	powerSet := [][]string{{}}
+	for _, field := range m.Filters {
+		var tmp [][]string
+		for _, ps := range powerSet {
+			lastSlice := append([]string{}, ps...)
+			nextSlice := append(lastSlice, field.Name)
+			tmp = append(tmp, nextSlice)
+		}
+		powerSet = append(powerSet, tmp...)
 	}
 
-	if field.Type.Code != TypeColumn {
-		return nil, fmt.Errorf("Unknown filter %q not a column", name)
-	}
+	// Check for sets with indirect fields and no reference fields.
+	validSet := [][]string{}
+	for _, filterSet := range powerSet {
+		for _, filter := range filterSet {
+			// Get the main struct field for its tags.
+			field := m.FieldByName(filter)
+			if field == nil {
+				return [][]string{}
+			}
 
-	return field, nil
+			if field.IsIndirect() {
+				referenceField := lex.Camel(field.Config.Get("via"))
+				if shared.StringInSlice(field.Name, filterSet) && !shared.StringInSlice(referenceField, filterSet) {
+					// Make the invalid set nil to ignore later.
+					filterSet = nil
+					break
+				}
+			}
+		}
+		if filterSet != nil {
+			validSet = append(validSet, filterSet)
+		}
+	}
+	return validSet
 }
 
 // ColumnFields returns the fields that map directly to a database column,
@@ -194,10 +239,14 @@ func (f *Field) ZeroValue() string {
 		panic("attempt to get zero value of non-column field")
 	}
 
+	if f.Type.IsPointer {
+		return "nil"
+	}
+
 	switch f.Type.Name {
 	case "string":
 		return `""`
-	case "int", "instancetype.Type", "int64", "OperationType":
+	case "int", "instancetype.Type", "int64", "OperationType", "CertificateType":
 		// FIXME: we use -1 since at the moment integer criteria are
 		// required to be positive.
 		return "-1"
@@ -256,8 +305,9 @@ func FieldCriteria(fields []*Field) string {
 // Type holds all information about a field in a field type that is relevant
 // for database code generation.
 type Type struct {
-	Name string
-	Code int
+	Name      string
+	Code      int
+	IsPointer bool
 }
 
 // Possible type code.
@@ -279,6 +329,7 @@ var columnarTypeNames = []string{
 	"int",
 	"int64",
 	"OperationType",
+	"CertificateType",
 	"string",
 	"time.Time",
 }

@@ -139,7 +139,7 @@ func TestUpgradeMembersWithoutRole(t *testing.T) {
 	gateway := newGateway(t, state.Node, serverCert, serverCert)
 	defer gateway.Shutdown()
 
-	trustedCerts := func() map[int]map[string]x509.Certificate {
+	trustedCerts := func() map[db.CertificateType]map[string]x509.Certificate {
 		return nil
 	}
 

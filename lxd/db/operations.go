@@ -10,12 +10,8 @@ import (
 //go:generate -command mapper lxd-generate db mapper -t operations.mapper.go
 //go:generate mapper reset
 //go:generate mapper stmt -p db -e operation objects
-//go:generate mapper stmt -p db -e operation objects-by-NodeID
-//go:generate mapper stmt -p db -e operation objects-by-ID
-//go:generate mapper stmt -p db -e operation objects-by-UUID
 //go:generate mapper stmt -p db -e operation create-or-replace struct=Operation
-//go:generate mapper stmt -p db -e operation delete-by-UUID
-//go:generate mapper stmt -p db -e operation delete-by-NodeID
+//go:generate mapper stmt -p db -e operation delete
 
 //go:generate mapper method -p db -e operation List
 //go:generate mapper method -p db -e operation CreateOrReplace struct=Operation
@@ -28,15 +24,15 @@ type Operation struct {
 	ID          int64         `db:"primary=yes"`                               // Stable database identifier
 	UUID        string        `db:"primary=yes"`                               // User-visible identifier
 	NodeAddress string        `db:"join=nodes.address&omit=create-or-replace"` // Address of the node the operation is running on
-	ProjectID   *int64        `db:"omit=objects"`                              // ID of the project for the operation.
+	ProjectID   *int64        // ID of the project for the operation.
 	NodeID      int64         // ID of the node the operation is running on
 	Type        OperationType // Type of the operation
 }
 
 // OperationFilter specifies potential query parameter fields.
 type OperationFilter struct {
-	ID     int64
-	NodeID int64
+	ID     *int64 // ID is a pointer so it can be omitted.
+	NodeID *int64 // NodeID is a pointer so it can be omitted.
 	UUID   string
 }
 

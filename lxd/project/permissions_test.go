@@ -29,12 +29,10 @@ func TestAllowInstanceCreation_Below(t *testing.T) {
 	tx, cleanup := db.NewTestClusterTx(t)
 	defer cleanup()
 
-	_, err := tx.CreateProject(api.ProjectsPost{
+	_, err := tx.CreateProject(db.Project{
 		Name: "p1",
-		ProjectPut: api.ProjectPut{
-			Config: map[string]string{
-				"limits.containers": "5",
-			},
+		Config: map[string]string{
+			"limits.containers": "5",
 		},
 	})
 	require.NoError(t, err)
@@ -63,12 +61,10 @@ func TestAllowInstanceCreation_Above(t *testing.T) {
 	tx, cleanup := db.NewTestClusterTx(t)
 	defer cleanup()
 
-	_, err := tx.CreateProject(api.ProjectsPost{
+	_, err := tx.CreateProject(db.Project{
 		Name: "p1",
-		ProjectPut: api.ProjectPut{
-			Config: map[string]string{
-				"limits.containers": "1",
-			},
+		Config: map[string]string{
+			"limits.containers": "1",
 		},
 	})
 	require.NoError(t, err)
@@ -97,12 +93,10 @@ func TestAllowInstanceCreation_DifferentType(t *testing.T) {
 	tx, cleanup := db.NewTestClusterTx(t)
 	defer cleanup()
 
-	_, err := tx.CreateProject(api.ProjectsPost{
+	_, err := tx.CreateProject(db.Project{
 		Name: "p1",
-		ProjectPut: api.ProjectPut{
-			Config: map[string]string{
-				"limits.containers": "1",
-			},
+		Config: map[string]string{
+			"limits.containers": "1",
 		},
 	})
 	require.NoError(t, err)
@@ -131,13 +125,11 @@ func TestAllowInstanceCreation_AboveInstances(t *testing.T) {
 	tx, cleanup := db.NewTestClusterTx(t)
 	defer cleanup()
 
-	_, err := tx.CreateProject(api.ProjectsPost{
+	_, err := tx.CreateProject(db.Project{
 		Name: "p1",
-		ProjectPut: api.ProjectPut{
-			Config: map[string]string{
-				"limits.containers": "5",
-				"limits.instances":  "1",
-			},
+		Config: map[string]string{
+			"limits.containers": "5",
+			"limits.instances":  "1",
 		},
 	})
 	require.NoError(t, err)

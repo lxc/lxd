@@ -23,14 +23,6 @@ import (
 //go:generate mapper reset
 //
 //go:generate mapper stmt -p db -e image objects
-//go:generate mapper stmt -p db -e image objects-by-Project
-//go:generate mapper stmt -p db -e image objects-by-Project-and-Cached
-//go:generate mapper stmt -p db -e image objects-by-Project-and-Public
-//go:generate mapper stmt -p db -e image objects-by-Project-and-Fingerprint
-//go:generate mapper stmt -p db -e image objects-by-Project-and-Fingerprint-and-Public
-//go:generate mapper stmt -p db -e image objects-by-Fingerprint
-//go:generate mapper stmt -p db -e image objects-by-Cached
-//go:generate mapper stmt -p db -e image objects-by-AutoUpdate
 //
 //go:generate mapper method -p db -e image List
 //go:generate mapper method -p db -e image Get

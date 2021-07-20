@@ -41,6 +41,9 @@ type Teacher struct {
 	Classes      []Class
 }
 
+type TeacherFilter struct {
+}
+
 func TestParse(t *testing.T) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "parse_test.go", nil, parser.ParseComments)

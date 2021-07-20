@@ -52,7 +52,7 @@ func tlsClientConfig(networkCert *shared.CertInfo, serverCert *shared.CertInfo) 
 }
 
 // tlsCheckCert checks certificate access, returns true if certificate is trusted.
-func tlsCheckCert(r *http.Request, networkCert *shared.CertInfo, serverCert *shared.CertInfo, trustedCerts map[int]map[string]x509.Certificate) bool {
+func tlsCheckCert(r *http.Request, networkCert *shared.CertInfo, serverCert *shared.CertInfo, trustedCerts map[db.CertificateType]map[string]x509.Certificate) bool {
 	_, err := x509.ParseCertificate(networkCert.KeyPair().Certificate[0])
 	if err != nil {
 		// Since we have already loaded this certificate, typically

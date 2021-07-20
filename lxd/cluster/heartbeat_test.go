@@ -205,7 +205,7 @@ func (f *heartbeatFixture) node() (*state.State, *cluster.Gateway, string) {
 	mux := http.NewServeMux()
 	server := newServer(serverCert, mux)
 
-	trustedCerts := func() map[int]map[string]x509.Certificate {
+	trustedCerts := func() map[db.CertificateType]map[string]x509.Certificate {
 		return nil
 	}
 

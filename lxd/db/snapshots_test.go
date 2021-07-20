@@ -12,7 +12,6 @@ import (
 
 	"github.com/lxc/lxd/lxd/db"
 	"github.com/lxc/lxd/lxd/instance/instancetype"
-	"github.com/lxc/lxd/shared/api"
 )
 
 func TestGetInstanceSnapshots(t *testing.T) {
@@ -90,7 +89,7 @@ func TestGetInstanceSnapshots_SameNameInDifferentProjects(t *testing.T) {
 	defer cleanup()
 
 	// Create an additional project
-	project1 := api.ProjectsPost{}
+	project1 := db.Project{}
 	project1.Name = "p1"
 	_, err := tx.CreateProject(project1)
 	require.NoError(t, err)

@@ -153,7 +153,7 @@ func projectsGet(d *Daemon, r *http.Request) response.Response {
 				return err
 			}
 
-			filtered := []api.Project{}
+			filtered := []db.Project{}
 			for _, project := range projects {
 				if !rbac.UserHasPermission(r, project.Name, "view") {
 					continue
@@ -221,7 +221,7 @@ func projectsGet(d *Daemon, r *http.Request) response.Response {
 //     $ref: "#/responses/InternalServerError"
 func projectsPost(d *Daemon, r *http.Request) response.Response {
 	// Parse the request.
-	project := api.ProjectsPost{}
+	project := db.Project{}
 
 	// Set default features.
 	if project.Config == nil {
@@ -525,7 +525,7 @@ func projectPatch(d *Daemon, r *http.Request) response.Response {
 }
 
 // Common logic between PUT and PATCH.
-func projectChange(d *Daemon, project *api.Project, req api.ProjectPut) response.Response {
+func projectChange(d *Daemon, project *db.Project, req api.ProjectPut) response.Response {
 	// Make a list of config keys that have changed.
 	configChanged := []string{}
 	for key := range project.Config {
@@ -829,7 +829,7 @@ func projectStateGet(d *Daemon, r *http.Request) response.Response {
 }
 
 // Check if a project is empty.
-func projectIsEmpty(project *api.Project) bool {
+func projectIsEmpty(project *db.Project) bool {
 	if len(project.UsedBy) > 0 {
 		// Check if the only entity is the default profile.
 		if len(project.UsedBy) == 1 && strings.Contains(project.UsedBy[0], "/profiles/default") {

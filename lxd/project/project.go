@@ -8,7 +8,6 @@ import (
 
 	"github.com/lxc/lxd/lxd/db"
 	"github.com/lxc/lxd/shared"
-	"github.com/lxc/lxd/shared/api"
 )
 
 // Default is the string used for a default project.
@@ -86,7 +85,7 @@ func StorageVolumeProject(c *db.Cluster, projectName string, volumeType int) (st
 // For custom volume type, if the project supplied has the "features.storage.volumes" flag enabled then the
 // project name is returned, otherwise the default project name is returned. For all other volume types the
 // supplied project's name is returned.
-func StorageVolumeProjectFromRecord(p *api.Project, volumeType int) string {
+func StorageVolumeProjectFromRecord(p *db.Project, volumeType int) string {
 	// Non-custom volumes always use the project specified.
 	if volumeType != db.StoragePoolVolumeTypeCustom {
 		return p.Name
@@ -123,7 +122,7 @@ func NetworkProject(c *db.Cluster, projectName string) (string, map[string]strin
 // NetworkProjectFromRecord returns the project name to use for the network based on the supplied project.
 // If the project supplied has the "features.networks" flag enabled then the project name is returned,
 // otherwise the default project name is returned.
-func NetworkProjectFromRecord(p *api.Project) string {
+func NetworkProjectFromRecord(p *db.Project) string {
 	// Networks only use the project specified if the project has the features.networks feature enabled,
 	// otherwise the legacy behaviour of using the default project for networks is used.
 	if shared.IsTrue(p.Config["features.networks"]) {
@@ -155,7 +154,7 @@ func ProfileProject(c *db.Cluster, projectName string) (string, map[string]strin
 // ProfileProjectFromRecord returns the project name to use for the profile based on the supplied project.
 // If the project supplied has the "features.profiles" flag enabled then the project name is returned,
 // otherwise the default project name is returned.
-func ProfileProjectFromRecord(p *api.Project) string {
+func ProfileProjectFromRecord(p *db.Project) string {
 	// Profiles only use the project specified if the project has the features.profiles feature enabled,
 	// otherwise the default project for profiles is used.
 	if shared.IsTrue(p.Config["features.profiles"]) {

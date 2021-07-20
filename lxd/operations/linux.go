@@ -18,7 +18,7 @@ func registerDBOperation(op *Operation, opType db.OperationType) error {
 		opInfo := db.Operation{
 			UUID:   op.id,
 			Type:   opType,
-			NodeID: tx.GetNodeID(),
+			NodeID: *tx.GetNodeID(),
 		}
 
 		if op.projectName != "" {

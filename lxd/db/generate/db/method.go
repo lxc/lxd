@@ -99,9 +99,9 @@ func (m *Method) uris(buf *file.Buffer) error {
 		if name == "Parent" {
 			continue
 		}
-		field := mapping.FieldByName(name)
-		if field == nil {
-			return fmt.Errorf("No field named %q in filter struct", name)
+		field, err := mapping.FilterFieldByName(name)
+		if err != nil {
+			return err
 		}
 		buf.L("if filter.%s != %s {", name, field.ZeroValue())
 		buf.L("        criteria[%q] = filter.%s", name, name)
@@ -183,9 +183,9 @@ func (m *Method) list(buf *file.Buffer) error {
 		if name == "Parent" {
 			zero = `""`
 		} else {
-			field := mapping.FieldByName(name)
-			if field == nil {
-				return fmt.Errorf("No field named %q in filter struct", name)
+			field, err := mapping.FilterFieldByName(name)
+			if err != nil {
+				return err
 			}
 			zero = field.ZeroValue()
 		}
@@ -961,9 +961,9 @@ func (m *Method) delete(buf *file.Buffer, deleteOne bool) error {
 		if name == "Parent" {
 			zero = `""`
 		} else {
-			field := mapping.FieldByName(name)
-			if field == nil {
-				return fmt.Errorf("No field named %q in filter struct", name)
+			field, err := mapping.FilterFieldByName(name)
+			if err != nil {
+				return err
 			}
 			zero = field.ZeroValue()
 		}
