@@ -64,10 +64,14 @@ func (event *Event) ToLogging() (EventLogRecord, error) {
 			ctx = append(ctx, v)
 		}
 
+		requestor, err := json.Marshal(e.Requestor)
+		if err != nil {
+			return EventLogRecord{}, err
+		}
 		record := EventLogRecord{
 			Time: event.Timestamp,
 			Lvl:  "info",
-			Msg:  fmt.Sprintf("Action: %s, Source: %s", e.Action, e.Source),
+			Msg:  fmt.Sprintf("Action: %s, Source: %s, Requestor: %s", e.Action, e.Source, requestor),
 			Ctx:  ctx,
 		}
 		return record, nil
