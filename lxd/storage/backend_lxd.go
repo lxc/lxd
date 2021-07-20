@@ -3760,7 +3760,14 @@ func (b *lxdBackend) CheckInstanceBackupFileSnapshots(backupConf *backup.Config,
 
 		inBackupFile := false
 		for _, backupFileSnap := range backupConf.Snapshots {
-			_, backupFileSnapOnly, _ := shared.InstanceGetParentAndSnapshotName(backupFileSnap.Name)
+			backupFileSnapOnly := backupFileSnap.Name
+
+			// Handle legacy usage by internalImport (that prefixes the instance name to snapshot name).
+			// TODO remove this once interalImport is removed.
+			if strings.Contains(backupFileSnapOnly, shared.SnapshotDelimiter) {
+				_, backupFileSnapOnly, _ = shared.InstanceGetParentAndSnapshotName(backupFileSnapOnly)
+			}
+
 			if driverSnapOnly == backupFileSnapOnly {
 				inBackupFile = true
 				break
@@ -3786,7 +3793,13 @@ func (b *lxdBackend) CheckInstanceBackupFileSnapshots(backupConf *backup.Config,
 	// Check the snapshots in backup config exist on storage device.
 	existingSnapshots := []*api.InstanceSnapshot{}
 	for _, backupFileSnap := range backupConf.Snapshots {
-		_, backupFileSnapOnly, _ := shared.InstanceGetParentAndSnapshotName(backupFileSnap.Name)
+		backupFileSnapOnly := backupFileSnap.Name
+
+		// Handle legacy usage by internalImport (that prefixes the instance name to snapshot name).
+		// TODO remove this once interalImport is removed.
+		if strings.Contains(backupFileSnapOnly, shared.SnapshotDelimiter) {
+			_, backupFileSnapOnly, _ = shared.InstanceGetParentAndSnapshotName(backupFileSnapOnly)
+		}
 
 		onStorageDevice := false
 		for _, driverSnapVol := range driverSnapshots {
